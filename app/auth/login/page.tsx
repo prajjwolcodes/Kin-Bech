@@ -42,16 +42,19 @@ function LoginPageContent() {
     dispatch(loginStart());
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -72,32 +75,10 @@ function LoginPageContent() {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError("Network error. Please try again.");
+      setError(
+        error instanceof Error ? error.message : "An unexpected error occurred"
+      );
       dispatch(loginFailure());
-
-      // Fallback to mock login for testing
-      let role: "buyer" | "seller" | "admin" = "buyer";
-      if (formData.email.includes("seller")) role = "seller";
-      if (formData.email.includes("admin")) role = "admin";
-
-      const mockUser = {
-        _id: Date.now().toString(),
-        username: formData.email.split("@")[0],
-        email: formData.email,
-        role,
-        createdAt: new Date().toISOString(),
-      };
-
-      const mockToken = "mock-jwt-token-" + Date.now();
-      dispatch(loginSuccess({ user: mockUser, token: mockToken }));
-
-      if (role === "buyer") {
-        router.push("/buyer/dashboard");
-      } else if (role === "seller") {
-        router.push("/seller/dashboard");
-      } else if (role === "admin") {
-        router.push("/admin/dashboard");
-      }
     } finally {
       setLoading(false);
     }

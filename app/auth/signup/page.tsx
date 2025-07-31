@@ -59,18 +59,21 @@ function SignupPageContent() {
     dispatch(loginStart());
 
     try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          role: role,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: formData.username,
+            email: formData.email,
+            password: formData.password,
+            role: role,
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -91,28 +94,12 @@ function SignupPageContent() {
       }
     } catch (error) {
       console.error("Signup error:", error);
-      setError("Network error. Please try again.");
+      setError(
+        error instanceof Error ? error.message : "An unexpected error occurred"
+      );
       dispatch(loginFailure());
 
       // Fallback to mock signup for testing
-      const mockUser = {
-        _id: Date.now().toString(),
-        username: formData.username,
-        email: formData.email,
-        role: role as "buyer" | "seller" | "admin",
-        createdAt: new Date().toISOString(),
-      };
-
-      const mockToken = "mock-jwt-token-" + Date.now();
-      dispatch(loginSuccess({ user: mockUser, token: mockToken }));
-
-      if (role === "buyer") {
-        router.push("/buyer/dashboard");
-      } else if (role === "seller") {
-        router.push("/seller/dashboard");
-      } else if (role === "admin") {
-        router.push("/admin/dashboard");
-      }
     } finally {
       setLoading(false);
     }
