@@ -64,24 +64,6 @@ const mockCategories = [
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
   },
-  {
-    _id: "3",
-    name: "Sports",
-    createdAt: "2024-01-01T00:00:00Z",
-    updatedAt: "2024-01-01T00:00:00Z",
-  },
-  {
-    _id: "4",
-    name: "Food & Beverage",
-    createdAt: "2024-01-01T00:00:00Z",
-    updatedAt: "2024-01-01T00:00:00Z",
-  },
-  {
-    _id: "5",
-    name: "Accessories",
-    createdAt: "2024-01-01T00:00:00Z",
-    updatedAt: "2024-01-01T00:00:00Z",
-  },
 ];
 
 const mockProducts = [
@@ -133,54 +115,6 @@ const mockProducts = [
     createdAt: "2024-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
   },
-  {
-    _id: "4",
-    name: "Artisan Coffee Beans",
-    description: "Premium roasted coffee beans from local farms",
-    price: 24.99,
-    categoryId: mockCategories[3],
-    count: 100,
-    imageUrl: "/placeholder.svg?height=300&width=300&text=Coffee",
-    sellerId: {
-      _id: "seller4",
-      username: "CoffeeRoasters",
-      email: "coffee@roasters.com",
-    },
-    createdAt: "2024-01-01T00:00:00Z",
-    updatedAt: "2024-01-01T00:00:00Z",
-  },
-  {
-    _id: "5",
-    name: "Yoga Mat Premium",
-    description: "Non-slip yoga mat for all your workout needs",
-    price: 49.99,
-    categoryId: mockCategories[2],
-    count: 30,
-    imageUrl: "/placeholder.svg?height=300&width=300&text=Yoga+Mat",
-    sellerId: {
-      _id: "seller5",
-      username: "YogaLife",
-      email: "yoga@life.com",
-    },
-    createdAt: "2024-01-01T00:00:00Z",
-    updatedAt: "2024-01-01T00:00:00Z",
-  },
-  {
-    _id: "6",
-    name: "Leather Wallet",
-    description: "Handcrafted genuine leather wallet",
-    price: 79.99,
-    categoryId: mockCategories[4],
-    count: 20,
-    imageUrl: "/placeholder.svg?height=300&width=300&text=Wallet",
-    sellerId: {
-      _id: "seller6",
-      username: "LeatherCraft",
-      email: "leather@craft.com",
-    },
-    createdAt: "2024-01-01T00:00:00Z",
-    updatedAt: "2024-01-01T00:00:00Z",
-  },
 ];
 
 function BuyerDashboardContent() {
@@ -206,20 +140,26 @@ function BuyerDashboardContent() {
 
     try {
       // Fetch categories
-      const categoriesResponse = await fetch("/api/categories", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const categoriesResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/category`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       // Fetch products
-      const productsResponse = await fetch("/api/products", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const productsResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/product`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (categoriesResponse.ok && productsResponse.ok) {
         const categoriesData = await categoriesResponse.json();
@@ -563,22 +503,12 @@ function BuyerDashboardContent() {
                         <p className="text-gray-600 mb-4">
                           {product.description}
                         </p>
-                        <div className="flex items-center mb-4">
-                          <div className="flex items-center">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-4 w-4 ${
-                                  i < 4
-                                    ? "text-yellow-400 fill-current"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                            ))}
-                            <span className="ml-2 text-sm text-gray-600">
-                              4.5 (128 reviews)
-                            </span>
-                          </div>
+                        <div>
+                          {product.categoryId.name && (
+                            <Badge className="mb-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                              {product.categoryId.name}
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center justify-between">
                           <div>

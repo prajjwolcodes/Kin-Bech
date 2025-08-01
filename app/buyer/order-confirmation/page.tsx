@@ -69,39 +69,7 @@ function OrderConfirmationContent() {
         dispatch(setCurrentOrder(data.order));
       } else {
         // Fallback to mock order
-        const mockOrder = {
-          _id: orderIdParam,
-          buyerId: {
-            _id: user?._id || "",
-            username: user?.username || "",
-            email: user?.email || "",
-          },
-          orderItems: [
-            {
-              productId: {
-                _id: "1",
-                name: "Sample Product",
-                price: 99.99,
-                imageUrl: "/placeholder.svg?height=100&width=100&text=Product",
-              },
-              quantity: 1,
-              price: 99.99,
-            },
-          ],
-          total: 109.99,
-          status: "PENDING" as const,
-          paymentMethod: "COD" as const,
-          shippingInfo: {
-            address: "Sample Address",
-            city: "Kathmandu",
-            postalCode: "44600",
-            country: "Nepal",
-            phone: "+977-9800000000",
-          },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        dispatch(setCurrentOrder(mockOrder));
+        console.error("Failed to fetch order details");
       }
     } catch (error) {
       console.error("Error fetching order details:", error);
@@ -310,16 +278,7 @@ function OrderConfirmationContent() {
                   <p>
                     <strong>City:</strong> {currentOrder.shippingInfo.city}
                   </p>
-                  {currentOrder.shippingInfo.postalCode && (
-                    <p>
-                      <strong>Postal Code:</strong>{" "}
-                      {currentOrder.shippingInfo.postalCode}
-                    </p>
-                  )}
-                  <p>
-                    <strong>Country:</strong>{" "}
-                    {currentOrder.shippingInfo.country}
-                  </p>
+
                   <p>
                     <strong>Phone:</strong> {currentOrder.shippingInfo.phone}
                   </p>
@@ -355,7 +314,7 @@ function OrderConfirmationContent() {
                 </div>
                 <div className="text-center">
                   <Badge variant="outline">
-                    Payment Method: {currentOrder.paymentMethod}
+                    Payment Method: {currentOrder.payment.method}
                   </Badge>
                 </div>
               </CardContent>

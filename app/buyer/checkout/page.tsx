@@ -110,34 +110,6 @@ function CheckoutPageContent() {
       setError("Network error. Please try again.");
 
       // Fallback to mock order creation
-      const mockOrder = {
-        _id: Date.now().toString(),
-        buyerId: {
-          _id: user?._id || "",
-          username: user?.username || "",
-          email: user?.email || "",
-        },
-        orderItems: items.map((item) => ({
-          productId: {
-            _id: item._id,
-            name: item.name,
-            price: item.price,
-            imageUrl: item.imageUrl,
-          },
-          quantity: item.quantity,
-          price: item.price,
-        })),
-        total: total * 1.1,
-        status: "PENDING" as const,
-        paymentMethod,
-        shippingInfo,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      dispatch(addOrder(mockOrder));
-      dispatch(clearCart());
-      router.push(`/buyer/order-confirmation?orderId=${mockOrder._id}`);
     } finally {
       setLoading(false);
     }

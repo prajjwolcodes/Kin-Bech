@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
 
 interface OrderItem {
+  _id: string
   productId: {
     _id: string
     name: string
@@ -9,6 +10,10 @@ interface OrderItem {
   }
   quantity: number
   price: number
+  sellerId: {
+    _id: string
+    username: string
+  }
 }
 
 interface Order {
@@ -26,13 +31,18 @@ interface Order {
   orderItems: OrderItem[]
   total: number
   status: "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED" | "COMPLETED"
-  paymentMethod: "COD" | "ESEWA" | "KHALTI"
+  payment: {
+    _id: string
+    amount: number
+    method: "COD" | "ESEWA" | "KHALTI"
+    status: "UNPAID" | "PAID"
+    transaction_uuid?: string
+  }
   shippingInfo: {
-    address: string
-    city: string
-    postalCode: string
-    country: string
-    phone: string
+    name?: string
+    address?: string
+    city?: string
+    phone?: string
   }
   createdAt: string
   updatedAt: string
@@ -40,6 +50,7 @@ interface Order {
 
 interface OrderState {
   orders: Order[]
+  sellerOrders: Order[]
   currentOrder: Order | null
   loading: boolean
   error: string | null
@@ -47,6 +58,7 @@ interface OrderState {
 
 const initialState: OrderState = {
   orders: [],
+  sellerOrders: [],
   currentOrder: null,
   loading: false,
   error: null,
@@ -59,6 +71,9 @@ const orderSlice = createSlice({
     setOrders: (state, action: PayloadAction<Order[]>) => {
       state.orders = action.payload
     },
+    setSellerOrders: (state, action: PayloadAction<Order[]>) => {
+      state.sellerOrders = action.payload
+    },
     setCurrentOrder: (state, action: PayloadAction<Order>) => {
       state.currentOrder = action.payload
     },
@@ -66,12 +81,24 @@ const orderSlice = createSlice({
       state.orders.unshift(action.payload)
     },
     updateOrderStatus: (state, action: PayloadAction<{ orderId: string; status: Order["status"] }>) => {
+      // Update in seller orders
+      const sellerOrder = state.sellerOrders.find((order) => order._id === action.payload.orderId)
+      if (sellerOrder) {
+        sellerOrder.status = action.payload.status
+        sellerOrder.updatedAt = new Date().toISOString()
+      }
+
+      // Update in all orders
       const order = state.orders.find((order) => order._id === action.payload.orderId)
       if (order) {
         order.status = action.payload.status
+        order.updatedAt = new Date().toISOString()
       }
+
+      // Update current order if it matches
       if (state.currentOrder && state.currentOrder._id === action.payload.orderId) {
         state.currentOrder.status = action.payload.status
+        state.currentOrder.updatedAt = new Date().toISOString()
       }
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -83,5 +110,6 @@ const orderSlice = createSlice({
   },
 })
 
-export const { setOrders, setCurrentOrder, addOrder, updateOrderStatus, setLoading, setError } = orderSlice.actions
+export const { setOrders, setSellerOrders, setCurrentOrder, addOrder, updateOrderStatus, setLoading, setError } =
+  orderSlice.actions
 export default orderSlice.reducer

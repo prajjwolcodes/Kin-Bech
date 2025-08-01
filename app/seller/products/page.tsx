@@ -1,27 +1,63 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useSelector } from "react-redux"
-import type { RootState } from "@/lib/store"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState } from "@/lib/store";
+import {
+  setSellerProducts,
+  addProduct,
+  updateProduct,
+  deleteProduct,
+  setCategories,
+  setLoading,
+  setError,
+} from "@/lib/features/products/productSlice";
+import { logout } from "@/lib/features/auth/authSlice";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Plus,
   Search,
@@ -37,220 +73,306 @@ import {
   User,
   Filter,
   Download,
-  Upload,
   TrendingUp,
   TrendingDown,
-} from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
+  Loader2,
+  X,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { RouteGuard } from "@/components/auth/routeGuard";
+import { useRouter } from "next/navigation";
 
-// Mock products data
-const mockProducts = [
-  {
-    id: "1",
-    name: "Wireless Bluetooth Headphones",
-    description: "High-quality wireless headphones with noise cancellation and premium sound quality.",
-    category: "Electronics",
-    price: 99.99,
-    stock: 50,
-    status: "active",
-    sales: 45,
-    revenue: 4499.55,
-    image: "/placeholder.svg?height=60&width=60&text=Headphones",
-    createdAt: "2024-01-10",
-    updatedAt: "2024-01-15",
-    rating: 4.5,
-    reviews: 128,
-  },
-  {
-    id: "2",
-    name: "Smart Fitness Watch",
-    description: "Advanced fitness tracking with heart rate monitor, GPS, and smartphone connectivity.",
-    category: "Electronics",
-    price: 199.99,
-    stock: 15,
-    status: "active",
-    sales: 32,
-    revenue: 6399.68,
-    image: "/placeholder.svg?height=60&width=60&text=Watch",
-    createdAt: "2024-01-08",
-    updatedAt: "2024-01-14",
-    rating: 4.7,
-    reviews: 89,
-  },
-  {
-    id: "3",
-    name: "Organic Cotton T-Shirt",
-    description: "Comfortable and sustainable cotton t-shirt made from 100% organic materials.",
-    category: "Clothing",
-    price: 29.99,
-    stock: 0,
-    status: "out_of_stock",
-    sales: 28,
-    revenue: 839.72,
-    image: "/placeholder.svg?height=60&width=60&text=T-Shirt",
-    createdAt: "2024-01-05",
-    updatedAt: "2024-01-12",
-    rating: 4.2,
-    reviews: 67,
-  },
-  {
-    id: "4",
-    name: "Bluetooth Speaker",
-    description: "Portable wireless speaker with excellent sound quality and long battery life.",
-    category: "Electronics",
-    price: 79.99,
-    stock: 25,
-    status: "active",
-    sales: 22,
-    revenue: 1759.78,
-    image: "/placeholder.svg?height=60&width=60&text=Speaker",
-    createdAt: "2024-01-03",
-    updatedAt: "2024-01-10",
-    rating: 4.4,
-    reviews: 45,
-  },
-  {
-    id: "5",
-    name: "Yoga Mat Premium",
-    description: "Non-slip yoga mat with superior grip and cushioning for all yoga practices.",
-    category: "Sports",
-    price: 49.99,
-    stock: 30,
-    status: "active",
-    sales: 18,
-    revenue: 899.82,
-    image: "/placeholder.svg?height=60&width=60&text=Yoga",
-    createdAt: "2024-01-01",
-    updatedAt: "2024-01-08",
-    rating: 4.6,
-    reviews: 34,
-  },
-]
+interface ProductFormData {
+  name: string;
+  description: string;
+  categoryId: string;
+  price: string;
+  count: string;
+  imageUrl: string;
+}
 
-export default function SellerProductsPage() {
-  const { user } = useSelector((state: RootState) => state.auth)
-  const [products, setProducts] = useState(mockProducts)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedStatus, setSelectedStatus] = useState("all")
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<any>(null)
-  const [newProduct, setNewProduct] = useState({
+function SellerProductsContent() {
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const { user, token } = useSelector((state: RootState) => state.auth);
+  const { sellerProducts, categories, loading } = useSelector(
+    (state: RootState) => state.products
+  );
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [newProduct, setNewProduct] = useState<ProductFormData>({
     name: "",
     description: "",
-    category: "",
+    categoryId: "",
     price: "",
-    stock: "",
-    image: "",
-  })
+    count: "",
+    imageUrl: "",
+  });
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory
-    const matchesStatus = selectedStatus === "all" || product.status === selectedStatus
-    return matchesSearch && matchesCategory && matchesStatus
-  })
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800"
-      case "out_of_stock":
-        return "bg-red-100 text-red-800"
-      case "draft":
-        return "bg-gray-100 text-gray-800"
-      case "inactive":
-        return "bg-yellow-100 text-yellow-800"
-      default:
-        return "bg-gray-100 text-gray-800"
+  useEffect(() => {
+    if (user && token) {
+      fetchSellerProducts();
+      fetchCategories();
     }
-  }
+  }, [user, token]);
 
-  const handleAddProduct = () => {
-    const product = {
-      id: Date.now().toString(),
-      name: newProduct.name,
-      description: newProduct.description,
-      category: newProduct.category,
-      price: Number.parseFloat(newProduct.price),
-      stock: Number.parseInt(newProduct.stock),
-      status: "active" as const,
-      sales: 0,
-      revenue: 0,
-      image: "/placeholder.svg?height=60&width=60&text=New+Product",
-      createdAt: new Date().toISOString().split("T")[0],
-      updatedAt: new Date().toISOString().split("T")[0],
-      rating: 0,
-      reviews: 0,
+  const fetchSellerProducts = async () => {
+    dispatch(setLoading(true));
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/product/seller`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log(response);
+      if (!response.ok) {
+        throw new Error("Failed to fetch seller products");
+      }
+
+      const data = await response.json();
+      if (data.products.length === 0) {
+        dispatch(setError("No products found for this seller"));
+      } else {
+        dispatch(setError(""));
+      }
+      dispatch(setSellerProducts(data.products || []));
+    } catch (error) {
+      console.error("Error fetching seller products:", error);
+      dispatch(setError("Failed to load products"));
+    } finally {
+      dispatch(setLoading(false));
     }
+  };
 
-    setProducts([product, ...products])
-    setNewProduct({
-      name: "",
-      description: "",
-      category: "",
-      price: "",
-      stock: "",
-      image: "",
-    })
-    setIsAddProductOpen(false)
-  }
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/category`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-  const handleDeleteProduct = (id: string) => {
-    setProducts(products.filter((p) => p.id !== id))
-  }
+      if (response.ok) {
+        const data = await response.json();
+        dispatch(setCategories(data.categories || []));
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
+
+  const filteredProducts = sellerProducts.filter((product) => {
+    if (!product || !product.name) return false; // skip invalid products
+
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+
+    const matchesCategory =
+      selectedCategory === "all" ||
+      product.categoryId?._id === selectedCategory; // when it's populated
+
+    const matchesStatus =
+      selectedStatus === "all" ||
+      (selectedStatus === "active" && product.count > 0) ||
+      (selectedStatus === "out_of_stock" && product.count === 0);
+
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  const getStatusColor = (count: number) => {
+    if (count === 0) return "bg-red-100 text-red-800";
+    if (count < 10) return "bg-yellow-100 text-yellow-800";
+    return "bg-green-100 text-green-800";
+  };
+
+  const getStatusText = (count: number) => {
+    if (count === 0) return "Out of Stock";
+    if (count < 10) return "Low Stock";
+    return "Active";
+  };
+
+  const handleAddProduct = async () => {
+    setFormError("");
+    setFormLoading(true);
+
+    try {
+      const productData = {
+        name: newProduct.name,
+        description: newProduct.description,
+        categoryId: newProduct.categoryId,
+        price: Number.parseFloat(newProduct.price),
+        count: Number.parseInt(newProduct.count),
+        imageUrl:
+          newProduct.imageUrl ||
+          "/placeholder.svg?height=200&width=200&text=Product",
+        sellerId: user?._id,
+      };
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/product`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(productData),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const createdProduct = {
+          ...data.product,
+          categoryId: data.product.categoryId?._id
+            ? data.product.categoryId // already populated
+            : categories.find((c) => c._id === data.product.categoryId) || {
+                _id: data.product.categoryId,
+                name: data.product.name,
+              },
+        };
+
+        dispatch(addProduct(createdProduct));
+        resetForm();
+        setIsAddProductOpen(false);
+      } else {
+        const errorData = await response.json();
+        setFormError(errorData.message || "Failed to add product");
+      }
+    } catch (error) {
+      console.error("Error adding product:", error);
+      setFormError("Network error. Please try again.");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleUpdateProduct = async () => {
+    if (!editingProduct) return;
+
+    setFormError("");
+    setFormLoading(true);
+
+    try {
+      const productData = {
+        name: newProduct.name,
+        description: newProduct.description,
+        categoryId: newProduct.categoryId,
+        price: Number.parseFloat(newProduct.price),
+        count: Number.parseInt(newProduct.count),
+        imageUrl: newProduct.imageUrl,
+      };
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/product/update/${editingProduct._id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(productData),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        dispatch(updateProduct(data.product)); // ✅ populated product
+        resetForm();
+        setIsAddProductOpen(false);
+      } else {
+        const errorData = await response.json();
+        setFormError(errorData.message || "Failed to update product");
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
+      setFormError("Network error. Please try again.");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/product/delete/${productId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        dispatch(deleteProduct(productId));
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Failed to delete product");
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      alert("Network error. Please try again.");
+    }
+  };
 
   const handleEditProduct = (product: any) => {
-    setEditingProduct(product)
+    setEditingProduct(product);
     setNewProduct({
       name: product.name,
       description: product.description,
-      category: product.category,
+      categoryId: product.categoryId._id,
       price: product.price.toString(),
-      stock: product.stock.toString(),
-      image: product.image,
-    })
-    setIsAddProductOpen(true)
-  }
+      count: product.count.toString(),
+      imageUrl: product.imageUrl,
+    });
+    setIsAddProductOpen(true);
+  };
 
-  const handleUpdateProduct = () => {
-    if (editingProduct) {
-      setProducts(
-        products.map((p) =>
-          p.id === editingProduct.id
-            ? {
-                ...p,
-                name: newProduct.name,
-                description: newProduct.description,
-                category: newProduct.category,
-                price: Number.parseFloat(newProduct.price),
-                stock: Number.parseInt(newProduct.stock),
-                updatedAt: new Date().toISOString().split("T")[0],
-              }
-            : p,
-        ),
-      )
-    }
-    setEditingProduct(null)
+  const resetForm = () => {
+    setEditingProduct(null);
     setNewProduct({
       name: "",
       description: "",
-      category: "",
+      categoryId: "",
       price: "",
-      stock: "",
-      image: "",
-    })
-    setIsAddProductOpen(false)
-  }
+      count: "",
+      imageUrl: "",
+    });
+    setFormError("");
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    router.push("/");
+  };
 
   const productStats = {
-    total: products.length,
-    active: products.filter((p) => p.status === "active").length,
-    outOfStock: products.filter((p) => p.status === "out_of_stock").length,
-    totalRevenue: products.reduce((sum, p) => sum + p.revenue, 0),
-    totalSales: products.reduce((sum, p) => sum + p.sales, 0),
-  }
+    total: sellerProducts.length,
+    active: sellerProducts.filter((p) => p.count > 0).length,
+    outOfStock: sellerProducts.filter((p) => p.count === 0).length,
+    lowStock: sellerProducts.filter((p) => p.count > 0 && p.count < 10).length,
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -260,7 +382,10 @@ export default function SellerProductsPage() {
           <div className="flex items-center justify-between">
             {/* Logo & Back */}
             <div className="flex items-center space-x-4">
-              <Link href="/seller/dashboard" className="flex items-center text-gray-600 hover:text-gray-900">
+              <Link
+                href="/seller/dashboard"
+                className="flex items-center text-gray-600 hover:text-gray-900"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Link>
@@ -286,10 +411,18 @@ export default function SellerProductsPage() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full"
+                  >
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder-user.jpg" alt={user?.name} />
-                      <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+                      <AvatarImage
+                        src="/placeholder-user.jpg"
+                        alt={user?.username}
+                      />
+                      <AvatarFallback>
+                        {user?.username?.charAt(0)}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -302,7 +435,7 @@ export default function SellerProductsPage() {
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
@@ -317,15 +450,27 @@ export default function SellerProductsPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
-            <p className="text-gray-600">Manage your product inventory and listings</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Product Management
+            </h1>
+            <p className="text-gray-600">
+              Manage your product inventory and listings
+            </p>
           </div>
           <div className="flex items-center space-x-4">
             <Button variant="outline">
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
+            <Dialog
+              open={isAddProductOpen}
+              onOpenChange={(open) => {
+                if (!open) {
+                  resetForm(); // ensure reset happens when closing via X or overlay
+                }
+                setIsAddProductOpen(open);
+              }}
+            >
               <DialogTrigger asChild>
                 <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                   <Plus className="mr-2 h-4 w-4" />
@@ -334,19 +479,44 @@ export default function SellerProductsPage() {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
+                  <DialogTitle>
+                    {editingProduct ? "Edit Product" : "Add New Product"}
+                  </DialogTitle>
                   <DialogDescription>
-                    {editingProduct ? "Update your product information" : "Create a new product listing for your store"}
+                    {editingProduct
+                      ? "Update your product information"
+                      : "Create a new product listing for your store"}
                   </DialogDescription>
+                  {/* <DialogClose asChild>
+                    <button
+                      onClick={() => {
+                        setIsAddProductOpen(false);
+                        resetForm();
+                      }}
+                      className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background 
+                   transition-opacity hover:opacity-100 focus:outline-none"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </DialogClose> */}
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                  {formError && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{formError}</AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="grid gap-2">
                     <Label htmlFor="name">Product Name</Label>
                     <Input
                       id="name"
                       value={newProduct.name}
-                      onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                      onChange={(e) =>
+                        setNewProduct({ ...newProduct, name: e.target.value })
+                      }
                       placeholder="Enter product name"
+                      disabled={formLoading}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -354,84 +524,117 @@ export default function SellerProductsPage() {
                     <Textarea
                       id="description"
                       value={newProduct.description}
-                      onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                      onChange={(e) =>
+                        setNewProduct({
+                          ...newProduct,
+                          description: e.target.value,
+                        })
+                      }
                       placeholder="Enter product description"
                       rows={3}
+                      disabled={formLoading}
                     />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="category">Category</Label>
                     <Select
-                      value={newProduct.category}
-                      onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
+                      value={newProduct.categoryId}
+                      onValueChange={(value) =>
+                        setNewProduct({ ...newProduct, categoryId: value })
+                      }
+                      disabled={formLoading}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Electronics">Electronics</SelectItem>
-                        <SelectItem value="Clothing">Clothing</SelectItem>
-                        <SelectItem value="Home & Garden">Home & Garden</SelectItem>
-                        <SelectItem value="Sports">Sports</SelectItem>
-                        <SelectItem value="Books">Books</SelectItem>
-                        <SelectItem value="Beauty">Beauty</SelectItem>
-                        <SelectItem value="Toys">Toys</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category._id} value={category._id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="price">Price ($)</Label>
+                      <Label htmlFor="price">Price (₹)</Label>
                       <Input
                         id="price"
                         type="number"
                         step="0.01"
                         value={newProduct.price}
-                        onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            price: e.target.value,
+                          })
+                        }
                         placeholder="0.00"
+                        disabled={formLoading}
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="stock">Stock Quantity</Label>
+                      <Label htmlFor="count">Stock Quantity</Label>
                       <Input
-                        id="stock"
+                        id="count"
                         type="number"
-                        value={newProduct.stock}
-                        onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
+                        value={newProduct.count}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            count: e.target.value,
+                          })
+                        }
                         placeholder="0"
+                        disabled={formLoading}
                       />
                     </div>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="image">Product Image</Label>
-                    <div className="flex items-center space-x-2">
-                      <Input id="image" type="file" accept="image/*" className="flex-1" />
-                      <Button variant="outline" size="sm">
-                        <Upload className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Label htmlFor="imageUrl">Product Image URL</Label>
+                    <Input
+                      id="imageUrl"
+                      type="url"
+                      value={newProduct.imageUrl}
+                      onChange={(e) =>
+                        setNewProduct({
+                          ...newProduct,
+                          imageUrl: e.target.value,
+                        })
+                      }
+                      placeholder="https://example.com/image.jpg"
+                      disabled={formLoading}
+                    />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button
                     variant="outline"
                     onClick={() => {
-                      setIsAddProductOpen(false)
-                      setEditingProduct(null)
-                      setNewProduct({
-                        name: "",
-                        description: "",
-                        category: "",
-                        price: "",
-                        stock: "",
-                        image: "",
-                      })
+                      setIsAddProductOpen(false);
+                      resetForm();
                     }}
+                    disabled={formLoading}
                   >
                     Cancel
                   </Button>
-                  <Button onClick={editingProduct ? handleUpdateProduct : handleAddProduct}>
-                    {editingProduct ? "Update Product" : "Add Product"}
+                  <Button
+                    onClick={
+                      editingProduct ? handleUpdateProduct : handleAddProduct
+                    }
+                    disabled={formLoading}
+                  >
+                    {formLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {editingProduct ? "Updating..." : "Adding..."}
+                      </>
+                    ) : editingProduct ? (
+                      "Update Product"
+                    ) : (
+                      "Add Product"
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -440,11 +643,13 @@ export default function SellerProductsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">{productStats.total}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {productStats.total}
+                </p>
                 <p className="text-sm text-gray-600">Total Products</p>
               </div>
             </CardContent>
@@ -452,7 +657,9 @@ export default function SellerProductsPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{productStats.active}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {productStats.active}
+                </p>
                 <p className="text-sm text-gray-600">Active</p>
               </div>
             </CardContent>
@@ -460,24 +667,20 @@ export default function SellerProductsPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-red-600">{productStats.outOfStock}</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {productStats.lowStock}
+                </p>
+                <p className="text-sm text-gray-600">Low Stock</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-red-600">
+                  {productStats.outOfStock}
+                </p>
                 <p className="text-sm text-gray-600">Out of Stock</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{productStats.totalSales}</p>
-                <p className="text-sm text-gray-600">Total Sales</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">${productStats.totalRevenue.toLocaleString()}</p>
-                <p className="text-sm text-gray-600">Revenue</p>
               </div>
             </CardContent>
           </Card>
@@ -504,17 +707,20 @@ export default function SellerProductsPage() {
                   />
                 </div>
               </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select
+                value={selectedCategory}
+                onValueChange={setSelectedCategory}
+              >
                 <SelectTrigger className="w-full md:w-48">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Electronics">Electronics</SelectItem>
-                  <SelectItem value="Clothing">Clothing</SelectItem>
-                  <SelectItem value="Home & Garden">Home & Garden</SelectItem>
-                  <SelectItem value="Sports">Sports</SelectItem>
-                  <SelectItem value="Books">Books</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category._id} value={category._id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
@@ -525,8 +731,6 @@ export default function SellerProductsPage() {
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="out_of_stock">Out of Stock</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -537,117 +741,132 @@ export default function SellerProductsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Products ({filteredProducts.length})</CardTitle>
-            <CardDescription>Manage your product listings and inventory</CardDescription>
+            <CardDescription>
+              Manage your product listings and inventory
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead>Sales</TableHead>
-                  <TableHead>Revenue</TableHead>
-                  <TableHead>Rating</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <Image
-                          src={product.image || "/placeholder.svg"}
-                          alt={product.name}
-                          width={60}
-                          height={60}
-                          className="rounded-lg object-cover"
-                        />
-                        <div>
-                          <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-gray-500">Created: {product.createdAt}</p>
+            {loading ? (
+              <div className="text-center py-12">
+                <Loader2 className="mx-auto h-12 w-12 animate-spin text-blue-600 mb-4" />
+                <p className="text-gray-500">Loading products...</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredProducts.map((product) => (
+                    <TableRow key={product._id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Image
+                            src={product.imageUrl || "/placeholder.svg"}
+                            alt={product.name}
+                            width={60}
+                            height={60}
+                            className="rounded-lg object-cover"
+                          />
+                          <div>
+                            <p className="font-medium">{product.name}</p>
+                            <p className="text-sm text-gray-500">
+                              Created:{" "}
+                              {new Date(product.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{product.category}</TableCell>
-                    <TableCell className="font-semibold">${product.price}</TableCell>
-                    <TableCell>
-                      <span
-                        className={
-                          product.stock === 0
-                            ? "text-red-600 font-medium"
-                            : product.stock < 10
+                      </TableCell>
+                      <TableCell>{product.categoryId.name}</TableCell>
+                      <TableCell className="font-semibold">
+                        ₹{product.price.toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={
+                            product.count === 0
+                              ? "text-red-600 font-medium"
+                              : product.count < 10
                               ? "text-yellow-600 font-medium"
                               : ""
-                        }
-                      >
-                        {product.stock}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-1">
-                        <span>{product.sales}</span>
-                        {product.sales > 30 ? (
-                          <TrendingUp className="h-4 w-4 text-green-600" />
-                        ) : product.sales < 10 ? (
-                          <TrendingDown className="h-4 w-4 text-red-600" />
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold">${product.revenue.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-1">
-                        <span>{product.rating}</span>
-                        <span className="text-sm text-gray-500">({product.reviews})</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(product.status)}>
-                        {product.status === "out_of_stock"
-                          ? "Out of Stock"
-                          : product.status.charAt(0).toUpperCase() + product.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditProduct(product)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Product
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteProduct(product.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          }
+                        >
+                          {product.count}
+                        </span>
+                      </TableCell>
 
-            {filteredProducts.length === 0 && (
+                      <TableCell>
+                        <Badge className={getStatusColor(product.count)}>
+                          {getStatusText(product.count)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleEditProduct(product)}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Product
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDeleteProduct(product._id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+
+            {!loading && filteredProducts.length === 0 && (
               <div className="text-center py-12">
                 <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-500">No products found matching your criteria.</p>
+                <p className="text-gray-500">
+                  No products found matching your criteria.
+                </p>
+                <Button
+                  className="mt-4"
+                  onClick={() => setIsAddProductOpen(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Your First Product
+                </Button>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
+}
+
+export default function SellerProductsPage() {
+  return (
+    <RouteGuard allowedRoles={["seller"]}>
+      <SellerProductsContent />
+    </RouteGuard>
+  );
 }

@@ -24,10 +24,15 @@ interface Product {
   sellerId: Seller
   createdAt: string
   updatedAt: string
+  sales?: number
+  revenue?: number
+  rating?: number
+  reviews?: number
 }
 
 interface ProductState {
   products: Product[]
+  sellerProducts: Product[]
   filteredProducts: Product[]
   categories: Category[]
   selectedCategory: string
@@ -38,6 +43,7 @@ interface ProductState {
 
 const initialState: ProductState = {
   products: [],
+  sellerProducts: [],
   filteredProducts: [],
   categories: [],
   selectedCategory: "",
@@ -53,6 +59,27 @@ const productSlice = createSlice({
     setProducts: (state, action: PayloadAction<Product[]>) => {
       state.products = action.payload
       state.filteredProducts = action.payload
+    },
+    setSellerProducts: (state, action: PayloadAction<Product[]>) => {
+      state.sellerProducts = action.payload
+    },
+    addProduct: (state, action: PayloadAction<Product>) => {
+      state.sellerProducts.unshift(action.payload)
+      state.products.unshift(action.payload)
+    },
+    updateProduct: (state, action: PayloadAction<Product>) => {
+      const index = state.sellerProducts.findIndex((p) => p._id === action.payload._id)
+      if (index !== -1) {
+        state.sellerProducts[index] = action.payload
+      }
+      const productIndex = state.products.findIndex((p) => p._id === action.payload._id)
+      if (productIndex !== -1) {
+        state.products[productIndex] = action.payload
+      }
+    },
+    deleteProduct: (state, action: PayloadAction<string>) => {
+      state.sellerProducts = state.sellerProducts.filter((p) => p._id !== action.payload)
+      state.products = state.products.filter((p) => p._id !== action.payload)
     },
     setCategories: (state, action: PayloadAction<Category[]>) => {
       state.categories = action.payload
@@ -86,6 +113,16 @@ const productSlice = createSlice({
   },
 })
 
-export const { setProducts, setCategories, setSelectedCategory, setSearchQuery, setLoading, setError } =
-  productSlice.actions
+export const {
+  setProducts,
+  setSellerProducts,
+  addProduct,
+  updateProduct,
+  deleteProduct,
+  setCategories,
+  setSelectedCategory,
+  setSearchQuery,
+  setLoading,
+  setError,
+} = productSlice.actions
 export default productSlice.reducer

@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/lib/store";
 import {
-  setProducts,
+  setSellerProducts,
   setLoading,
   setError,
 } from "@/lib/features/products/productSlice";
+import { setSellerOrders } from "@/lib/features/orders/orderSlice";
 import { logout } from "@/lib/features/auth/authSlice";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +40,7 @@ import {
   Plus,
   Eye,
   BarChart3,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -53,44 +55,34 @@ import {
 import { RouteGuard } from "@/components/auth/routeGuard";
 import { useRouter } from "next/navigation";
 
-// Mock data for seller dashboard
-const mockSellerStats = {
-  totalProducts: 24,
-  totalOrders: 156,
-  totalRevenue: 45230.5,
-  monthlyGrowth: 12.5,
-};
+interface SellerStats {
+  totalProducts: number;
+  totalOrders: number;
+  totalRevenue: number;
+  monthlyGrowth: number;
+  pendingOrders: number;
+  lowStockProducts: number;
+}
 
-const mockRecentOrders = [
-  {
-    _id: "order1",
-    buyerId: { username: "john_doe", email: "john@example.com" },
-    total: 299.99,
-    status: "PENDING",
-    createdAt: "2024-01-20T10:30:00Z",
-    orderItems: [
-      {
-        productId: { name: "Wireless Headphones" },
-        quantity: 1,
-        price: 299.99,
-      },
-    ],
-  },
-  {
-    _id: "order2",
-    buyerId: { username: "jane_smith", email: "jane@example.com" },
-    total: 149.99,
-    status: "CONFIRMED",
-    createdAt: "2024-01-19T15:45:00Z",
-    orderItems: [
-      {
-        productId: { name: "Bluetooth Speaker" },
-        quantity: 1,
-        price: 149.99,
-      },
-    ],
-  },
-];
+interface RecentOrder {
+  _id: string;
+  buyerId: {
+    _id: string;
+    username: string;
+    email: string;
+  };
+  total: number;
+  status: "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED" | "COMPLETED";
+  createdAt: string;
+  orderItems: Array<{
+    productId: {
+      _id: string;
+      name: string;
+    };
+    quantity: number;
+    price: number;
+  }>;
+}
 
 const mockRevenueData = [
   { month: "Jan", revenue: 4000 },
@@ -105,15 +97,26 @@ function SellerDashboardContent() {
   const dispatch = useDispatch();
   const router = useRouter();
   const { user, token } = useSelector((state: RootState) => state.auth);
-  const { products, loading } = useSelector(
+  const { sellerProducts, loading } = useSelector(
     (state: RootState) => state.products
   );
-  const [stats, setStats] = useState(mockSellerStats);
-  const [recentOrders, setRecentOrders] = useState(mockRecentOrders);
+  const { sellerOrders } = useSelector((state: RootState) => state.orders);
+
+  const [stats, setStats] = useState<SellerStats>({
+    totalProducts: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
+    monthlyGrowth: 0,
+    pendingOrders: 0,
+    lowStockProducts: 0,
+  });
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
 
   useEffect(() => {
-    fetchSellerData();
-  }, []);
+    if (user && token) {
+      fetchSellerData();
+    }
+  }, [user, token]);
 
   const fetchSellerData = async () => {
     dispatch(setLoading(true));
@@ -121,7 +124,7 @@ function SellerDashboardContent() {
     try {
       // Fetch seller products
       const productsResponse = await fetch(
-        `/api/products/seller/${user?._id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/product/seller`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -131,12 +134,15 @@ function SellerDashboardContent() {
       );
 
       // Fetch seller orders
-      const ordersResponse = await fetch("/api/orders/seller", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const ordersResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/seller`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       // Fetch seller stats
       const statsResponse = await fetch("/api/seller/stats", {
@@ -148,12 +154,40 @@ function SellerDashboardContent() {
 
       if (productsResponse.ok) {
         const productsData = await productsResponse.json();
-        dispatch(setProducts(productsData.products));
+        dispatch(setSellerProducts(productsData.products || []));
+
+        // Calculate stats from products
+        const products = productsData.products || [];
+        const lowStock = products.filter((p: any) => p.count < 10).length;
+        setStats((prev) => ({
+          ...prev,
+          totalProducts: products.length,
+          lowStockProducts: lowStock,
+        }));
       }
 
       if (ordersResponse.ok) {
         const ordersData = await ordersResponse.json();
-        setRecentOrders(ordersData.orders.slice(0, 5));
+        const orders = ordersData.orders || [];
+        dispatch(setSellerOrders(orders));
+        setRecentOrders(orders.slice(0, 5));
+
+        // Calculate order stats
+        const totalRevenue = orders.reduce(
+          (sum: number, order: any) => sum + order.total,
+          0
+        );
+        const pendingOrders = orders.filter(
+          (o: any) => o.status === "PENDING"
+        ).length;
+
+        setStats((prev) => ({
+          ...prev,
+          totalOrders: orders.length,
+          totalRevenue,
+          pendingOrders,
+          monthlyGrowth: 12.5, // This would come from backend calculation
+        }));
       }
 
       if (statsResponse.ok) {
@@ -164,10 +198,7 @@ function SellerDashboardContent() {
       console.error("Error fetching seller data:", error);
       dispatch(setError("Failed to load dashboard data"));
 
-      // Use mock data as fallback
-      dispatch(setProducts([]));
-      setStats(mockSellerStats);
-      setRecentOrders(mockRecentOrders);
+      // Use mock/calculated data as fallback
     } finally {
       dispatch(setLoading(false));
     }
@@ -188,10 +219,23 @@ function SellerDashboardContent() {
         return "bg-green-100 text-green-800";
       case "CANCELLED":
         return "bg-red-100 text-red-800";
+      case "COMPLETED":
+        return "bg-green-100 text-green-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -216,6 +260,11 @@ function SellerDashboardContent() {
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="sm">
                 <Bell className="h-4 w-4" />
+                {stats.pendingOrders > 0 && (
+                  <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1">
+                    {stats.pendingOrders}
+                  </span>
+                )}
               </Button>
 
               <DropdownMenu>
@@ -278,6 +327,27 @@ function SellerDashboardContent() {
           </p>
         </div>
 
+        {/* Alerts */}
+        {stats.lowStockProducts > 0 && (
+          <div className="mb-6">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
+                <p className="text-yellow-800">
+                  <strong>{stats.lowStockProducts}</strong> products are running
+                  low on stock.
+                  <Link
+                    href="/seller/products"
+                    className="ml-2 text-yellow-600 underline hover:text-yellow-700"
+                  >
+                    Manage inventory
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
@@ -306,6 +376,11 @@ function SellerDashboardContent() {
                   <p className="text-3xl font-bold text-gray-900">
                     {stats.totalOrders}
                   </p>
+                  {stats.pendingOrders > 0 && (
+                    <p className="text-xs text-yellow-600">
+                      {stats.pendingOrders} pending
+                    </p>
+                  )}
                 </div>
                 <ShoppingCart className="h-8 w-8 text-green-600" />
               </div>
@@ -390,35 +465,47 @@ function SellerDashboardContent() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <div
-                    key={order._id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>
-                          {order.buyerId.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{order.buyerId.username}</p>
-                        <p className="text-sm text-gray-500">
-                          {order.orderItems[0].productId.name}
+                {recentOrders.length > 0 ? (
+                  recentOrders.map((order) => (
+                    <div
+                      key={order._id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>
+                            {order.buyerId.username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">
+                            {order.buyerId.username}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {order.orderItems.length} item
+                            {order.orderItems.length > 1 ? "s" : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          ₹{order.total.toLocaleString()}
                         </p>
+                        <Badge
+                          className={getStatusColor(order.status)}
+                          variant="secondary"
+                        >
+                          {order.status}
+                        </Badge>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold">₹{order.total}</p>
-                      <Badge
-                        className={getStatusColor(order.status)}
-                        variant="secondary"
-                      >
-                        {order.status}
-                      </Badge>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <ShoppingCart className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <p className="text-gray-500">No orders yet</p>
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>

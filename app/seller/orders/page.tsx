@@ -1,14 +1,39 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useSelector } from "react-redux"
-import type { RootState } from "@/lib/store"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState } from "@/lib/store";
+import {
+  setSellerOrders,
+  updateOrderStatus,
+  setLoading,
+  setError,
+} from "@/lib/features/orders/orderSlice";
+import { logout } from "@/lib/features/auth/authSlice";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -16,9 +41,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Search,
   MoreHorizontal,
@@ -34,208 +65,144 @@ import {
   User,
   Filter,
   Download,
-} from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
+  Loader2,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { RouteGuard } from "@/components/auth/routeGuard";
+import { useRouter } from "next/navigation";
 
-// Mock orders data
-const mockOrders = [
-  {
-    id: "ORD-001",
-    customer: {
-      name: "John Doe",
-      email: "john@example.com",
-      phone: "+1 234 567 8900",
-      avatar: "/placeholder.svg?height=40&width=40&text=JD",
-    },
-    products: [
-      {
-        id: "1",
-        name: "Wireless Headphones",
-        quantity: 1,
-        price: 99.99,
-        image: "/placeholder.svg?height=50&width=50&text=Headphones",
-      },
-    ],
-    total: 109.98,
-    status: "pending",
-    paymentStatus: "paid",
-    paymentMethod: "Credit Card",
-    shippingAddress: {
-      street: "123 Main St",
-      city: "New York",
-      state: "NY",
-      zipCode: "10001",
-    },
-    trackingNumber: "",
-    createdAt: "2024-01-15T10:30:00Z",
-    updatedAt: "2024-01-15T10:30:00Z",
-  },
-  {
-    id: "ORD-002",
-    customer: {
-      name: "Jane Smith",
-      email: "jane@example.com",
-      phone: "+1 234 567 8901",
-      avatar: "/placeholder.svg?height=40&width=40&text=JS",
-    },
-    products: [
-      {
-        id: "2",
-        name: "Smart Watch",
-        quantity: 1,
-        price: 199.99,
-        image: "/placeholder.svg?height=50&width=50&text=Watch",
-      },
-    ],
-    total: 219.98,
-    status: "shipped",
-    paymentStatus: "paid",
-    paymentMethod: "PayPal",
-    shippingAddress: {
-      street: "456 Oak Ave",
-      city: "Los Angeles",
-      state: "CA",
-      zipCode: "90210",
-    },
-    trackingNumber: "TRK123456789",
-    createdAt: "2024-01-14T14:20:00Z",
-    updatedAt: "2024-01-15T09:15:00Z",
-  },
-  {
-    id: "ORD-003",
-    customer: {
-      name: "Mike Johnson",
-      email: "mike@example.com",
-      phone: "+1 234 567 8902",
-      avatar: "/placeholder.svg?height=40&width=40&text=MJ",
-    },
-    products: [
-      {
-        id: "4",
-        name: "Bluetooth Speaker",
-        quantity: 2,
-        price: 79.99,
-        image: "/placeholder.svg?height=50&width=50&text=Speaker",
-      },
-    ],
-    total: 179.97,
-    status: "delivered",
-    paymentStatus: "paid",
-    paymentMethod: "Credit Card",
-    shippingAddress: {
-      street: "789 Pine St",
-      city: "Chicago",
-      state: "IL",
-      zipCode: "60601",
-    },
-    trackingNumber: "TRK987654321",
-    createdAt: "2024-01-13T16:45:00Z",
-    updatedAt: "2024-01-16T11:30:00Z",
-  },
-  {
-    id: "ORD-004",
-    customer: {
-      name: "Sarah Wilson",
-      email: "sarah@example.com",
-      phone: "+1 234 567 8903",
-      avatar: "/placeholder.svg?height=40&width=40&text=SW",
-    },
-    products: [
-      {
-        id: "3",
-        name: "Yoga Mat",
-        quantity: 1,
-        price: 49.99,
-        image: "/placeholder.svg?height=50&width=50&text=Yoga",
-      },
-    ],
-    total: 59.98,
-    status: "cancelled",
-    paymentStatus: "refunded",
-    paymentMethod: "Credit Card",
-    shippingAddress: {
-      street: "321 Elm St",
-      city: "Miami",
-      state: "FL",
-      zipCode: "33101",
-    },
-    trackingNumber: "",
-    createdAt: "2024-01-12T08:15:00Z",
-    updatedAt: "2024-01-13T14:30:00Z",
-  },
-]
+function SellerOrdersContent() {
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const { user, token } = useSelector((state: RootState) => state.auth);
+  const { sellerOrders, loading } = useSelector(
+    (state: RootState) => state.orders
+  );
 
-export default function SellerOrdersPage() {
-  const { user } = useSelector((state: RootState) => state.auth)
-  const [orders, setOrders] = useState(mockOrders)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [selectedOrder, setSelectedOrder] = useState<any>(null)
-  const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
 
-  const filteredOrders = orders.filter((order) => {
+  useEffect(() => {
+    if (user && token) {
+      fetchSellerOrders();
+    }
+  }, [user, token]);
+
+  const fetchSellerOrders = async () => {
+    dispatch(setLoading(true));
+    try {
+      const response = await fetch("/api/orders/seller", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        dispatch(setSellerOrders(data.orders || []));
+      } else {
+        throw new Error("Failed to fetch orders");
+      }
+    } catch (error) {
+      console.error("Error fetching seller orders:", error);
+      dispatch(setError("Failed to load orders"));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  const filteredOrders = sellerOrders.filter((order) => {
     const matchesSearch =
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer.email.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+      order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.buyerId.username
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      order.buyerId.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || order.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800"
-      case "confirmed":
-        return "bg-blue-100 text-blue-800"
-      case "shipped":
-        return "bg-purple-100 text-purple-800"
-      case "delivered":
-        return "bg-green-100 text-green-800"
-      case "cancelled":
-        return "bg-red-100 text-red-800"
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800";
+      case "CONFIRMED":
+        return "bg-blue-100 text-blue-800";
+      case "DELIVERED":
+        return "bg-green-100 text-green-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
+      case "COMPLETED":
+        return "bg-green-100 text-green-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
-      case "paid":
-        return "bg-green-100 text-green-800"
-      case "pending":
-        return "bg-yellow-100 text-yellow-800"
-      case "failed":
-        return "bg-red-100 text-red-800"
-      case "refunded":
-        return "bg-gray-100 text-gray-800"
+      case "PAID":
+        return "bg-green-100 text-green-800";
+      case "UNPAID":
+        return "bg-yellow-100 text-yellow-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
-  const updateOrderStatus = (orderId: string, newStatus: string) => {
-    setOrders(
-      orders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date().toISOString() } : order,
-      ),
-    )
-  }
+  const handleUpdateOrderStatus = async (
+    orderId: string,
+    newStatus: string
+  ) => {
+    setUpdatingOrder(orderId);
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        dispatch(updateOrderStatus({ orderId, status: newStatus as any }));
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Failed to update order status");
+      }
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      alert("Network error. Please try again.");
+    } finally {
+      setUpdatingOrder(null);
+    }
+  };
 
   const viewOrderDetails = (order: any) => {
-    setSelectedOrder(order)
-    setIsOrderDetailOpen(true)
-  }
+    setSelectedOrder(order);
+    setIsOrderDetailOpen(true);
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    router.push("/");
+  };
 
   const orderStats = {
-    total: orders.length,
-    pending: orders.filter((o) => o.status === "pending").length,
-    confirmed: orders.filter((o) => o.status === "confirmed").length,
-    shipped: orders.filter((o) => o.status === "shipped").length,
-    delivered: orders.filter((o) => o.status === "delivered").length,
-    cancelled: orders.filter((o) => o.status === "cancelled").length,
-  }
+    total: sellerOrders.length,
+    pending: sellerOrders.filter((o) => o.status === "PENDING").length,
+    confirmed: sellerOrders.filter((o) => o.status === "CONFIRMED").length,
+    delivered: sellerOrders.filter((o) => o.status === "DELIVERED").length,
+    completed: sellerOrders.filter((o) => o.status === "COMPLETED").length,
+    cancelled: sellerOrders.filter((o) => o.status === "CANCELLED").length,
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -245,7 +212,10 @@ export default function SellerOrdersPage() {
           <div className="flex items-center justify-between">
             {/* Logo & Back */}
             <div className="flex items-center space-x-4">
-              <Link href="/seller/dashboard" className="flex items-center text-gray-600 hover:text-gray-900">
+              <Link
+                href="/seller/dashboard"
+                className="flex items-center text-gray-600 hover:text-gray-900"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Link>
@@ -271,10 +241,18 @@ export default function SellerOrdersPage() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full"
+                  >
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder-user.jpg" alt={user?.name} />
-                      <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+                      <AvatarImage
+                        src="/placeholder-user.jpg"
+                        alt={user?.username}
+                      />
+                      <AvatarFallback>
+                        {user?.username?.charAt(0)}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -287,7 +265,7 @@ export default function SellerOrdersPage() {
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
@@ -302,8 +280,12 @@ export default function SellerOrdersPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Order Management</h1>
-            <p className="text-gray-600">Monitor and manage all your customer orders</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Order Management
+            </h1>
+            <p className="text-gray-600">
+              Monitor and manage all your customer orders
+            </p>
           </div>
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
@@ -316,7 +298,9 @@ export default function SellerOrdersPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">{orderStats.total}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {orderStats.total}
+                </p>
                 <p className="text-sm text-gray-600">Total Orders</p>
               </div>
             </CardContent>
@@ -324,7 +308,9 @@ export default function SellerOrdersPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-yellow-600">{orderStats.pending}</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {orderStats.pending}
+                </p>
                 <p className="text-sm text-gray-600">Pending</p>
               </div>
             </CardContent>
@@ -332,7 +318,9 @@ export default function SellerOrdersPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{orderStats.confirmed}</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {orderStats.confirmed}
+                </p>
                 <p className="text-sm text-gray-600">Confirmed</p>
               </div>
             </CardContent>
@@ -340,15 +328,9 @@ export default function SellerOrdersPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">{orderStats.shipped}</p>
-                <p className="text-sm text-gray-600">Shipped</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{orderStats.delivered}</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {orderStats.delivered}
+                </p>
                 <p className="text-sm text-gray-600">Delivered</p>
               </div>
             </CardContent>
@@ -356,7 +338,19 @@ export default function SellerOrdersPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-red-600">{orderStats.cancelled}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {orderStats.completed}
+                </p>
+                <p className="text-sm text-gray-600">Completed</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-red-600">
+                  {orderStats.cancelled}
+                </p>
                 <p className="text-sm text-gray-600">Cancelled</p>
               </div>
             </CardContent>
@@ -390,11 +384,11 @@ export default function SellerOrdersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                  <SelectItem value="DELIVERED">Delivered</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -405,123 +399,188 @@ export default function SellerOrdersPage() {
         <Card>
           <CardHeader>
             <CardTitle>Orders ({filteredOrders.length})</CardTitle>
-            <CardDescription>Manage your customer orders and track their status</CardDescription>
+            <CardDescription>
+              Manage your customer orders and track their status
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Products</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={order.customer.avatar || "/placeholder.svg"} alt={order.customer.name} />
-                          <AvatarFallback>
-                            {order.customer.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{order.customer.name}</p>
-                          <p className="text-sm text-gray-500">{order.customer.email}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        {order.products.slice(0, 2).map((product) => (
-                          <Image
-                            key={product.id}
-                            src={product.image || "/placeholder.svg"}
-                            alt={product.name}
-                            width={30}
-                            height={30}
-                            className="rounded object-cover"
-                          />
-                        ))}
-                        {order.products.length > 2 && (
-                          <span className="text-sm text-gray-500">+{order.products.length - 2}</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold">${order.total.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(order.status)}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getPaymentStatusColor(order.paymentStatus)}>
-                        {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => viewOrderDetails(order)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          {order.status === "pending" && (
-                            <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "confirmed")}>
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Confirm Order
-                            </DropdownMenuItem>
-                          )}
-                          {order.status === "confirmed" && (
-                            <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "shipped")}>
-                              <Truck className="mr-2 h-4 w-4" />
-                              Mark as Shipped
-                            </DropdownMenuItem>
-                          )}
-                          {order.status === "shipped" && (
-                            <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "delivered")}>
-                              <Package className="mr-2 h-4 w-4" />
-                              Mark as Delivered
-                            </DropdownMenuItem>
-                          )}
-                          {(order.status === "pending" || order.status === "confirmed") && (
-                            <DropdownMenuItem
-                              onClick={() => updateOrderStatus(order.id, "cancelled")}
-                              className="text-red-600"
-                            >
-                              <XCircle className="mr-2 h-4 w-4" />
-                              Cancel Order
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            {loading ? (
+              <div className="text-center py-12">
+                <Loader2 className="mx-auto h-12 w-12 animate-spin text-blue-600 mb-4" />
+                <p className="text-gray-500">Loading orders...</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Payment</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.map((order) => (
+                    <TableRow key={order._id}>
+                      <TableCell className="font-medium">
+                        {order._id.slice(-8)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                              {order.buyerId.username
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">
+                              {order.buyerId.username}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {order.buyerId.email}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          {order.orderItems.slice(0, 2).map((item) => (
+                            <Image
+                              key={item._id}
+                              src={
+                                item.productId.imageUrl || "/placeholder.svg"
+                              }
+                              alt={item.productId.name}
+                              width={30}
+                              height={30}
+                              className="rounded object-cover"
+                            />
+                          ))}
+                          {order.orderItems.length > 2 && (
+                            <span className="text-sm text-gray-500">
+                              +{order.orderItems.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        ₹{order.total.toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(order.status)}>
+                          {order.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={getPaymentStatusColor(
+                            order.payment.status
+                          )}
+                        >
+                          {order.payment.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              disabled={updatingOrder === order._id}
+                            >
+                              {updatingOrder === order._id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <MoreHorizontal className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => viewOrderDetails(order)}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            {order.status === "PENDING" && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleUpdateOrderStatus(
+                                    order._id,
+                                    "CONFIRMED"
+                                  )
+                                }
+                              >
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Confirm Order
+                              </DropdownMenuItem>
+                            )}
+                            {order.status === "CONFIRMED" && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleUpdateOrderStatus(
+                                    order._id,
+                                    "DELIVERED"
+                                  )
+                                }
+                              >
+                                <Truck className="mr-2 h-4 w-4" />
+                                Mark as Delivered
+                              </DropdownMenuItem>
+                            )}
+                            {order.status === "DELIVERED" && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleUpdateOrderStatus(
+                                    order._id,
+                                    "COMPLETED"
+                                  )
+                                }
+                              >
+                                <Package className="mr-2 h-4 w-4" />
+                                Mark as Completed
+                              </DropdownMenuItem>
+                            )}
+                            {(order.status === "PENDING" ||
+                              order.status === "CONFIRMED") && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleUpdateOrderStatus(
+                                    order._id,
+                                    "CANCELLED"
+                                  )
+                                }
+                                className="text-red-600"
+                              >
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Cancel Order
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
 
-            {filteredOrders.length === 0 && (
+            {!loading && filteredOrders.length === 0 && (
               <div className="text-center py-12">
                 <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-500">No orders found matching your criteria.</p>
+                <p className="text-gray-500">
+                  No orders found matching your criteria.
+                </p>
               </div>
             )}
           </CardContent>
@@ -531,8 +590,12 @@ export default function SellerOrdersPage() {
         <Dialog open={isOrderDetailOpen} onOpenChange={setIsOrderDetailOpen}>
           <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Order Details - {selectedOrder?.id}</DialogTitle>
-              <DialogDescription>Complete information about this order</DialogDescription>
+              <DialogTitle>
+                Order Details - {selectedOrder?._id.slice(-8)}
+              </DialogTitle>
+              <DialogDescription>
+                Complete information about this order
+              </DialogDescription>
             </DialogHeader>
             {selectedOrder && (
               <div className="space-y-6">
@@ -541,13 +604,17 @@ export default function SellerOrdersPage() {
                   <div>
                     <h4 className="font-semibold">Order Status</h4>
                     <Badge className={getStatusColor(selectedOrder.status)}>
-                      {selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
+                      {selectedOrder.status}
                     </Badge>
                   </div>
                   <div>
                     <h4 className="font-semibold">Payment Status</h4>
-                    <Badge className={getPaymentStatusColor(selectedOrder.paymentStatus)}>
-                      {selectedOrder.paymentStatus.charAt(0).toUpperCase() + selectedOrder.paymentStatus.slice(1)}
+                    <Badge
+                      className={getPaymentStatusColor(
+                        selectedOrder.payment.status
+                      )}
+                    >
+                      {selectedOrder.payment.status}
                     </Badge>
                   </div>
                 </div>
@@ -558,25 +625,22 @@ export default function SellerOrdersPage() {
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center space-x-3 mb-3">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage
-                          src={selectedOrder.customer.avatar || "/placeholder.svg"}
-                          alt={selectedOrder.customer.name}
-                        />
                         <AvatarFallback>
-                          {selectedOrder.customer.name
+                          {selectedOrder.buyerId.username
                             .split(" ")
                             .map((n: string) => n[0])
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{selectedOrder.customer.name}</p>
-                        <p className="text-sm text-gray-600">{selectedOrder.customer.email}</p>
+                        <p className="font-medium">
+                          {selectedOrder.buyerId.username}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {selectedOrder.buyerId.email}
+                        </p>
                       </div>
                     </div>
-                    <p className="text-sm">
-                      <strong>Phone:</strong> {selectedOrder.customer.phone}
-                    </p>
                   </div>
                 </div>
 
@@ -584,23 +648,32 @@ export default function SellerOrdersPage() {
                 <div>
                   <h4 className="font-semibold mb-3">Products Ordered</h4>
                   <div className="space-y-3">
-                    {selectedOrder.products.map((product: any) => (
-                      <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    {selectedOrder.orderItems.map((item: any) => (
+                      <div
+                        key={item._id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
                         <div className="flex items-center space-x-3">
                           <Image
-                            src={product.image || "/placeholder.svg"}
-                            alt={product.name}
+                            src={item.productId.imageUrl || "/placeholder.svg"}
+                            alt={item.productId.name}
                             width={60}
                             height={60}
                             className="rounded object-cover"
                           />
                           <div>
-                            <p className="font-medium">{product.name}</p>
-                            <p className="text-sm text-gray-500">Quantity: {product.quantity}</p>
-                            <p className="text-sm text-gray-500">Unit Price: ${product.price}</p>
+                            <p className="font-medium">{item.productId.name}</p>
+                            <p className="text-sm text-gray-500">
+                              Quantity: {item.quantity}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Unit Price: ₹{item.price}
+                            </p>
                           </div>
                         </div>
-                        <p className="font-semibold">${(product.price * product.quantity).toFixed(2)}</p>
+                        <p className="font-semibold">
+                          ₹{(item.price * item.quantity).toLocaleString()}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -610,41 +683,44 @@ export default function SellerOrdersPage() {
                 <div>
                   <h4 className="font-semibold mb-3">Shipping Address</h4>
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <p>{selectedOrder.shippingAddress.street}</p>
-                    <p>
-                      {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state}{" "}
-                      {selectedOrder.shippingAddress.zipCode}
-                    </p>
+                    <p>{selectedOrder.shippingInfo.name}</p>
+                    <p>{selectedOrder.shippingInfo.address}</p>
+                    <p>{selectedOrder.shippingInfo.city}</p>
+                    <p>Phone: {selectedOrder.shippingInfo.phone}</p>
                   </div>
                 </div>
 
-                {/* Payment & Tracking */}
+                {/* Payment & Order Info */}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-semibold mb-3">Payment Information</h4>
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <p>
-                        <strong>Method:</strong> {selectedOrder.paymentMethod}
+                        <strong>Method:</strong> {selectedOrder.payment.method}
                       </p>
                       <p>
-                        <strong>Status:</strong> {selectedOrder.paymentStatus}
+                        <strong>Status:</strong> {selectedOrder.payment.status}
                       </p>
                       <p>
-                        <strong>Total:</strong> ${selectedOrder.total.toFixed(2)}
+                        <strong>Amount:</strong> ₹
+                        {selectedOrder.payment.amount.toLocaleString()}
                       </p>
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-3">Tracking Information</h4>
+                    <h4 className="font-semibold mb-3">Order Information</h4>
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <p>
-                        <strong>Tracking Number:</strong> {selectedOrder.trackingNumber || "Not assigned"}
+                        <strong>Order Date:</strong>{" "}
+                        {new Date(selectedOrder.createdAt).toLocaleDateString()}
                       </p>
                       <p>
-                        <strong>Order Date:</strong> {new Date(selectedOrder.createdAt).toLocaleDateString()}
+                        <strong>Last Updated:</strong>{" "}
+                        {new Date(selectedOrder.updatedAt).toLocaleDateString()}
                       </p>
                       <p>
-                        <strong>Last Updated:</strong> {new Date(selectedOrder.updatedAt).toLocaleDateString()}
+                        <strong>Total:</strong> ₹
+                        {selectedOrder.total.toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -652,7 +728,10 @@ export default function SellerOrdersPage() {
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsOrderDetailOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsOrderDetailOpen(false)}
+              >
                 Close
               </Button>
             </DialogFooter>
@@ -660,5 +739,13 @@ export default function SellerOrdersPage() {
         </Dialog>
       </div>
     </div>
-  )
+  );
+}
+
+export default function SellerOrdersPage() {
+  return (
+    <RouteGuard allowedRoles={["seller"]}>
+      <SellerOrdersContent />
+    </RouteGuard>
+  );
 }

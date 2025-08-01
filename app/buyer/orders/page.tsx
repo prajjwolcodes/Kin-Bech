@@ -149,9 +149,14 @@ function OrdersPageContent() {
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
-      dispatch(setError("Failed to load orders"));
+      dispatch(
+        setError(
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred"
+        )
+      );
       // Fallback to mock data
-      dispatch(setOrders(mockOrders));
     } finally {
       dispatch(setLoading(false));
     }
@@ -362,7 +367,7 @@ function OrdersPageContent() {
                       <CardDescription>
                         Placed on{" "}
                         {new Date(order.createdAt).toLocaleDateString()} •
-                        Payment: {order.paymentMethod}
+                        Payment: {order.payment.method}
                       </CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -415,12 +420,6 @@ function OrdersPageContent() {
 
                     {/* Order Summary */}
                     <div className="flex items-center justify-between pt-4 border-t">
-                      <div>
-                        <p className="text-sm text-gray-500">
-                          Delivery to: {order.shippingInfo.city},{" "}
-                          {order.shippingInfo.country}
-                        </p>
-                      </div>
                       <div className="text-right">
                         <p className="text-lg font-bold">
                           Total: ₹{order.total.toFixed(2)}

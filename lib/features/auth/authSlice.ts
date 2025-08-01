@@ -59,8 +59,26 @@ const authSlice = createSlice({
       state.token = action.payload.token
       state.isAuthenticated = true
     },
+    initializeAuth: (state) => {
+      if (typeof window !== "undefined") {
+        const token = localStorage.getItem("token")
+        const userStr = localStorage.getItem("user")
+        if (token && userStr) {
+          try {
+            const user = JSON.parse(userStr)
+            state.user = user
+            state.token = token
+            state.isAuthenticated = true
+          } catch (error) {
+            // Clear invalid data
+            localStorage.removeItem("token")
+            localStorage.removeItem("user")
+          }
+        }
+      }
+    },
   },
 })
 
-export const { loginStart, loginSuccess, loginFailure, logout, setCredentials } = authSlice.actions
+export const { loginStart, loginSuccess, loginFailure, logout, setCredentials, initializeAuth } = authSlice.actions
 export default authSlice.reducer
