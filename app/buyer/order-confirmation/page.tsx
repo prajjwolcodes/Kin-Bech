@@ -38,6 +38,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RouteGuard } from "@/components/auth/routeGuard";
 import { useRouter } from "next/navigation";
+import { se } from "date-fns/locale";
+import { set } from "date-fns";
 
 function OrderConfirmationContent() {
   const dispatch = useDispatch();
@@ -57,19 +59,25 @@ function OrderConfirmationContent() {
   const fetchOrderDetails = async (orderIdParam: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/orders/${orderIdParam}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/single/${orderIdParam}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
 
       if (response.ok) {
-        const data = await response.json();
-        dispatch(setCurrentOrder(data.order));
-      } else {
-        // Fallback to mock order
-        console.error("Failed to fetch order details");
+        console.log(data);
+
+        // Save order and items separately
+        dispatch(
+          setCurrentOrder({ ...data.data.order, items: data.data.items })
+        );
       }
     } catch (error) {
       console.error("Error fetching order details:", error);
@@ -229,7 +237,7 @@ function OrderConfirmationContent() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {currentOrder.orderItems.map((item, index) => (
+                  {currentOrder.items.map((item, index) => (
                     <div
                       key={index}
                       className="flex items-center space-x-4 p-4 border rounded-lg"
@@ -273,14 +281,14 @@ function OrderConfirmationContent() {
                 <div className="space-y-2">
                   <p>
                     <strong>Address:</strong>{" "}
-                    {currentOrder.shippingInfo.address}
+                    {currentOrder.shippingInfo?.address}
                   </p>
                   <p>
-                    <strong>City:</strong> {currentOrder.shippingInfo.city}
+                    <strong>City:</strong> {currentOrder.shippingInfo?.city}
                   </p>
 
                   <p>
-                    <strong>Phone:</strong> {currentOrder.shippingInfo.phone}
+                    <strong>Phone:</strong> {currentOrder.shippingInfo?.phone}
                   </p>
                 </div>
               </CardContent>
@@ -314,7 +322,7 @@ function OrderConfirmationContent() {
                 </div>
                 <div className="text-center">
                   <Badge variant="outline">
-                    Payment Method: {currentOrder.payment.method}
+                    Payment Method: {currentOrder.paymentMethod}
                   </Badge>
                 </div>
               </CardContent>

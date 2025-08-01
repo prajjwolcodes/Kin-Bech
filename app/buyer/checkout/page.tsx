@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { useSearchParams } from "next/navigation";
 import type { RootState } from "@/lib/store";
-import { clearCart } from "@/lib/features/cart/cartSlice";
-import { addOrder } from "@/lib/features/orders/orderSlice";
+import { setCurrentOrder } from "@/lib/features/orders/orderSlice";
 import { logout } from "@/lib/features/auth/authSlice";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,7 @@ import {
   Bell,
   LogOut,
   AlertCircle,
+  Clock,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -47,27 +48,105 @@ import { useRouter } from "next/navigation";
 function CheckoutPageContent() {
   const dispatch = useDispatch();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get("orderId");
   const { user, token } = useSelector((state: RootState) => state.auth);
-  const { items, total } = useSelector((state: RootState) => state.cart);
+  const { currentOrder } = useSelector((state: RootState) => state.orders);
   const [loading, setLoading] = useState(false);
+  const [orderLoading, setOrderLoading] = useState(true);
   const [error, setError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<
     "COD" | "ESEWA" | "KHALTI"
   >("COD");
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [shippingInfo, setShippingInfo] = useState({
+    name: user?.username || "",
     address: "",
     city: "",
-    postalCode: "",
-    country: "Nepal",
     phone: "",
   });
+
+  useEffect(() => {
+    if (orderId) {
+      fetchOrderDetails(orderId);
+    }
+  }, [orderId]);
+
+  useEffect(() => {
+    if (currentOrder && currentOrder.createdAt) {
+      const orderTime = new Date(currentOrder.createdAt).getTime();
+      const expiryTime = orderTime + 30 * 60 * 1000; // 30 minutes
+
+      const updateTimer = () => {
+        const now = Date.now();
+        const remaining = Math.max(0, expiryTime - now);
+        setTimeRemaining(remaining);
+
+        if (remaining === 0) {
+          // Order expired, redirect to cart
+          router.push("/buyer/cart");
+        }
+      };
+
+      updateTimer();
+      const interval = setInterval(updateTimer, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [currentOrder, router]);
+
+  const fetchOrderDetails = async (orderIdParam: string) => {
+    setOrderLoading(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/single/${orderIdParam}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        dispatch(
+          setCurrentOrder({
+            ...data.data.order,
+            items: data.data.items,
+          })
+        );
+
+        if (
+          data.data.order.status !== "PENDING" ||
+          (data.data.order.shippingInfo && data.data.order.paymentMethod)
+        ) {
+          router.push(
+            `/buyer/order-confirmation?orderId=${data.data.order._id}`
+          );
+        }
+      } else {
+        setError(data.message || "Failed to fetch order details");
+      }
+    } catch (error) {
+      console.error("Error fetching order details:", error);
+      setError("Failed to load order details");
+    } finally {
+      setOrderLoading(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setShippingInfo((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePlaceOrder = async () => {
-    if (!shippingInfo.address || !shippingInfo.city || !shippingInfo.phone) {
+  const handleCODPayment = async () => {
+    if (
+      !shippingInfo.name ||
+      !shippingInfo.address ||
+      !shippingInfo.city ||
+      !shippingInfo.phone
+    ) {
       setError("Please fill in all required shipping information");
       return;
     }
@@ -76,40 +155,116 @@ function CheckoutPageContent() {
     setError("");
 
     try {
-      const orderData = {
-        orderItems: items.map((item) => ({
-          productId: item._id,
-          quantity: item.quantity,
-          price: item.price,
-        })),
-        total: total * 1.1, // Including tax
-        paymentMethod,
-        shippingInfo,
-      };
-
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(orderData),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/checkout/${orderId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            shippingInfo,
+            paymentMethod: "COD",
+            status: "CONFIRMED",
+          }),
+        }
+      );
 
       const data = await response.json();
+      console.log(data);
 
       if (response.ok) {
-        dispatch(addOrder(data.order));
-        dispatch(clearCart());
-        router.push(`/buyer/order-confirmation?orderId=${data.order._id}`);
+        dispatch(
+          setCurrentOrder({
+            ...data.data.order,
+            items: data.data.items, // merge items into order
+          })
+        );
+        router.push(`/buyer/order-confirmation?orderId=${data.data.order._id}`);
       } else {
-        setError(data.message || "Failed to place order");
+        setError(data.message || "Failed to update order");
       }
     } catch (error) {
-      console.error("Order placement error:", error);
-      setError("Network error. Please try again.");
+      console.error("Order update error:", error);
+      router.push(`/buyer/order-confirmation?orderId=${orderId}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Fallback to mock order creation
+  const handleDigitalPayment = async (method: "ESEWA" | "KHALTI") => {
+    if (
+      !shippingInfo.name ||
+      !shippingInfo.address ||
+      !shippingInfo.city ||
+      !shippingInfo.phone
+    ) {
+      setError("Please fill in all required shipping information");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // First update shipping info and payment method
+      const updateResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/checkout/${orderId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            shippingInfo,
+            paymentMethod: method,
+          }),
+        }
+      );
+
+      const updateData = await updateResponse.json();
+
+      if (updateResponse.ok) {
+        dispatch(
+          setCurrentOrder({
+            ...updateData.data.order,
+            items: updateData.data.items,
+          })
+        );
+
+        // Initiate payment
+        const paymentResponse = await fetch(
+          `/api/payments/${method.toLowerCase()}/initiate`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              orderId,
+              amount: updateData.data.order.total,
+              return_url: `${window.location.origin}/buyer/payment-success?orderId=${orderId}`,
+              failure_url: `${window.location.origin}/buyer/payment-failure?orderId=${orderId}`,
+            }),
+          }
+        );
+
+        const paymentData = await paymentResponse.json();
+
+        if (paymentResponse.ok && paymentData.payment_url) {
+          window.location.href = paymentData.payment_url;
+        } else {
+          setError("Failed to initiate payment");
+        }
+      } else {
+        setError(updateData.message || "Failed to update order");
+      }
+    } catch (error) {
+      console.error("Payment initiation error:", error);
+      setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -120,20 +275,37 @@ function CheckoutPageContent() {
     router.push("/");
   };
 
-  if (items.length === 0) {
+  const formatTime = (milliseconds: number) => {
+    const minutes = Math.floor(milliseconds / 60000);
+    const seconds = Math.floor((milliseconds % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  if (orderLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading order details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentOrder) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <ShoppingCart className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Your cart is empty
+            Order not found
           </h3>
           <p className="text-gray-500 mb-6">
-            Add items to your cart before checkout
+            The order you're looking for doesn't exist or has expired
           </p>
-          <Link href="/buyer/dashboard">
+          <Link href="/buyer/cart">
             <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-              Start Shopping
+              Back to Cart
             </Button>
           </Link>
         </div>
@@ -202,6 +374,22 @@ function CheckoutPageContent() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Timer Alert */}
+        {timeRemaining < 10 && (
+          <Alert className="mb-6 border-orange-200 bg-orange-50">
+            <Clock className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <strong>
+                Time remaining to complete your order:{" "}
+                {formatTime(timeRemaining)}
+              </strong>
+              <br />
+              Your order will be automatically cancelled if not completed within
+              this time.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Breadcrumb */}
         <div className="flex items-center space-x-2 mb-6">
           <Link
@@ -235,6 +423,30 @@ function CheckoutPageContent() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
+                    <Label htmlFor="name">Full Name *</Label>
+                    <Input
+                      id="name"
+                      placeholder="Enter your full name"
+                      value={shippingInfo.name}
+                      onChange={(e) =>
+                        handleInputChange("name", e.target.value)
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Input
+                      id="phone"
+                      placeholder="Enter your phone number"
+                      value={shippingInfo.phone}
+                      onChange={(e) =>
+                        handleInputChange("phone", e.target.value)
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-2">
                     <Label htmlFor="address">Street Address *</Label>
                     <Input
                       id="address"
@@ -254,29 +466,6 @@ function CheckoutPageContent() {
                       value={shippingInfo.city}
                       onChange={(e) =>
                         handleInputChange("city", e.target.value)
-                      }
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="postalCode">Postal Code</Label>
-                    <Input
-                      id="postalCode"
-                      placeholder="Enter postal code"
-                      value={shippingInfo.postalCode}
-                      onChange={(e) =>
-                        handleInputChange("postalCode", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      placeholder="Enter your phone number"
-                      value={shippingInfo.phone}
-                      onChange={(e) =>
-                        handleInputChange("phone", e.target.value)
                       }
                       required
                     />
@@ -338,6 +527,28 @@ function CheckoutPageContent() {
                     </Label>
                   </div>
                 </RadioGroup>
+
+                <div className="mt-6">
+                  {paymentMethod === "COD" ? (
+                    <Button
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      onClick={handleCODPayment}
+                      disabled={loading}
+                    >
+                      {loading ? "Confirming Order..." : "Confirm Order"}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                      onClick={() => handleDigitalPayment(paymentMethod)}
+                      disabled={loading}
+                    >
+                      {loading
+                        ? "Redirecting..."
+                        : `Pay Now with ${paymentMethod}`}
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -347,62 +558,76 @@ function CheckoutPageContent() {
             <Card className="sticky top-24">
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
+                <CardDescription>
+                  Order #{currentOrder?._id || "N/A"}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Order Items */}
                 <div className="space-y-3">
-                  {items.map((item) => (
-                    <div key={item._id} className="flex items-center space-x-3">
-                      <Image
-                        src={item.imageUrl || "/placeholder.svg"}
-                        alt={item.name}
-                        width={50}
-                        height={50}
-                        className="rounded object-cover"
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{item.name}</p>
-                        <p className="text-xs text-gray-500">
-                          Qty: {item.quantity}
+                  {currentOrder?.items && currentOrder.items.length > 0 ? (
+                    currentOrder.items.map((item, index) => (
+                      <div
+                        key={item._id || index}
+                        className="flex items-center space-x-3"
+                      >
+                        <Image
+                          src={item.productId?.imageUrl || "/placeholder.svg"}
+                          alt={item.productId?.name || "Product"}
+                          width={50}
+                          height={50}
+                          className="rounded object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">
+                            {item.productId?.name || "Unnamed Product"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Qty: {item.quantity}
+                          </p>
+                        </div>
+                        <p className="font-semibold">
+                          ₹{(item.price * item.quantity).toFixed(2)}
                         </p>
                       </div>
-                      <p className="font-semibold">
-                        ₹{(item.price * item.quantity).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      No items found in this order.
+                    </p>
+                  )}
                 </div>
 
                 <Separator />
 
                 {/* Pricing */}
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>₹{total.toFixed(2)}</span>
+                {currentOrder?.total ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>₹{(currentOrder.total / 1.1).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Shipping</span>
+                      <span className="text-green-600">Free</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tax (10%)</span>
+                      <span>
+                        ₹{((currentOrder.total * 0.1) / 1.1).toFixed(2)}
+                      </span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between text-lg font-semibold">
+                      <span>Total</span>
+                      <span>₹{currentOrder.total.toFixed(2)}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Shipping</span>
-                    <span className="text-green-600">Free</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tax (10%)</span>
-                    <span>₹{(total * 0.1).toFixed(2)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-lg font-semibold">
-                    <span>Total</span>
-                    <span>₹{(total * 1.1).toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <Button
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  onClick={handlePlaceOrder}
-                  disabled={loading}
-                >
-                  {loading ? "Placing Order..." : "Place Order"}
-                </Button>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    Order total not available.
+                  </p>
+                )}
 
                 <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
                   <Shield className="h-4 w-4" />

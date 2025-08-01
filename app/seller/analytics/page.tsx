@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/lib/store";
+import { logout } from "@/lib/features/auth/authSlice";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -18,300 +20,305 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import {
   TrendingUp,
-  TrendingDown,
   DollarSign,
+  Package,
   ShoppingCart,
   Users,
-  Package,
-  Download,
-  ArrowLeft,
-  Bell,
-  Settings,
-  LogOut,
-  User,
-  Target,
-  AlertTriangle,
   RefreshCw,
+  Download,
+  Calendar,
+  Bell,
+  LogOut,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { RouteGuard } from "@/components/auth/routeGuard";
+import { useRouter } from "next/navigation";
 
-interface AnalyticsData {
+interface AnalyticsOverview {
   totalRevenue: number;
   totalOrders: number;
+  totalProducts: number;
   totalCustomers: number;
-  productsSold: number;
-  revenueChange: number;
-  ordersChange: number;
-  customersChange: number;
-  productsSoldChange: number;
+  revenueGrowth: number;
+  ordersGrowth: number;
+  productsGrowth: number;
+  customersGrowth: number;
 }
 
 interface RevenueData {
   month: string;
   revenue: number;
   orders: number;
-  customers: number;
 }
 
 interface CategoryData {
   name: string;
   value: number;
   color: string;
-  revenue: number;
 }
 
 interface TopProduct {
   _id: string;
   name: string;
-  sales: number;
-  revenue: number;
-  trend: "up" | "down";
   imageUrl: string;
+  totalSold: number;
+  revenue: number;
   category: string;
 }
 
 interface CustomerAnalytics {
-  month: string;
-  new: number;
-  returning: number;
-  total: number;
+  newCustomers: number;
+  returningCustomers: number;
+  totalCustomers: number;
 }
 
 interface DailySales {
-  day: string;
+  date: string;
   sales: number;
   orders: number;
 }
 
-export default function SellerAnalyticsPage() {
+// Mock data for development
+const mockOverview: AnalyticsOverview = {
+  totalRevenue: 45230.5,
+  totalOrders: 342,
+  totalProducts: 28,
+  totalCustomers: 156,
+  revenueGrowth: 12.5,
+  ordersGrowth: 8.3,
+  productsGrowth: 5.2,
+  customersGrowth: 15.7,
+};
+
+const mockRevenueData: RevenueData[] = [
+  { month: "Jan", revenue: 4200, orders: 28 },
+  { month: "Feb", revenue: 3800, orders: 25 },
+  { month: "Mar", revenue: 5200, orders: 35 },
+  { month: "Apr", revenue: 4800, orders: 32 },
+  { month: "May", revenue: 6100, orders: 41 },
+  { month: "Jun", revenue: 5500, orders: 37 },
+];
+
+const mockCategoryData: CategoryData[] = [
+  { name: "Electronics", value: 35, color: "#0088FE" },
+  { name: "Clothing", value: 25, color: "#00C49F" },
+  { name: "Books", value: 20, color: "#FFBB28" },
+  { name: "Home & Garden", value: 15, color: "#FF8042" },
+  { name: "Sports", value: 5, color: "#8884D8" },
+];
+
+const mockTopProducts: TopProduct[] = [
+  {
+    _id: "1",
+    name: "Wireless Bluetooth Headphones",
+    imageUrl: "/placeholder.svg?height=50&width=50&text=Headphones",
+    totalSold: 45,
+    revenue: 4495.5,
+    category: "Electronics",
+  },
+  {
+    _id: "2",
+    name: "Smart Fitness Watch",
+    imageUrl: "/placeholder.svg?height=50&width=50&text=Watch",
+    totalSold: 32,
+    revenue: 6398.0,
+    category: "Electronics",
+  },
+  {
+    _id: "3",
+    name: "Premium Cotton T-Shirt",
+    imageUrl: "/placeholder.svg?height=50&width=50&text=Shirt",
+    totalSold: 78,
+    revenue: 2340.0,
+    category: "Clothing",
+  },
+];
+
+const mockCustomerAnalytics: CustomerAnalytics = {
+  newCustomers: 89,
+  returningCustomers: 67,
+  totalCustomers: 156,
+};
+
+const mockDailySales: DailySales[] = [
+  { date: "Mon", sales: 1200, orders: 8 },
+  { date: "Tue", sales: 1800, orders: 12 },
+  { date: "Wed", sales: 1500, orders: 10 },
+  { date: "Thu", sales: 2200, orders: 15 },
+  { date: "Fri", sales: 2800, orders: 19 },
+  { date: "Sat", sales: 3200, orders: 22 },
+  { date: "Sun", sales: 2100, orders: 14 },
+];
+
+function SellerAnalyticsContent() {
+  const dispatch = useDispatch();
+  const router = useRouter();
   const { user, token } = useSelector((state: RootState) => state.auth);
+  const [loading, setLoading] = useState(false);
   const [timeRange, setTimeRange] = useState("6months");
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
-    null
+  const [overview, setOverview] = useState<AnalyticsOverview>(mockOverview);
+  const [revenueData, setRevenueData] =
+    useState<RevenueData[]>(mockRevenueData);
+  const [categoryData, setCategoryData] =
+    useState<CategoryData[]>(mockCategoryData);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>(mockTopProducts);
+  const [customerAnalytics, setCustomerAnalytics] = useState<CustomerAnalytics>(
+    mockCustomerAnalytics
   );
-  const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
-  const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
-  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
-  const [customerData, setCustomerData] = useState<CustomerAnalytics[]>([]);
-  const [dailySalesData, setDailySalesData] = useState<DailySales[]>([]);
+  const [dailySales, setDailySales] = useState<DailySales[]>(mockDailySales);
 
-  // Fetch analytics data from backend
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [timeRange]);
+
   const fetchAnalyticsData = async () => {
+    setLoading(true);
     try {
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      };
-
-      // Fetch main analytics stats
-      const analyticsResponse = await fetch(
-        `/api/seller/analytics/overview?period=${timeRange}`,
+      // Fetch overview analytics
+      const overviewResponse = await fetch(
+        `/api/seller/analytics/overview?timeRange=${timeRange}`,
         {
-          headers,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
-      if (analyticsResponse.ok) {
-        const analytics = await analyticsResponse.json();
-        setAnalyticsData(analytics.data);
+      if (overviewResponse.ok) {
+        const overviewData = await overviewResponse.json();
+        setOverview(overviewData);
       }
 
-      // Fetch revenue trend data
+      // Fetch revenue trends
       const revenueResponse = await fetch(
-        `/api/seller/analytics/revenue?period=${timeRange}`,
+        `/api/seller/analytics/revenue?timeRange=${timeRange}`,
         {
-          headers,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       if (revenueResponse.ok) {
-        const revenue = await revenueResponse.json();
-        setRevenueData(revenue.data);
+        const revenueData = await revenueResponse.json();
+        setRevenueData(revenueData.data);
       }
 
       // Fetch category distribution
       const categoryResponse = await fetch(
-        `/api/seller/analytics/categories?period=${timeRange}`,
+        `/api/seller/analytics/categories?timeRange=${timeRange}`,
         {
-          headers,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       if (categoryResponse.ok) {
-        const categories = await categoryResponse.json();
-        setCategoryData(categories.data);
+        const categoryData = await categoryResponse.json();
+        setCategoryData(categoryData.data);
       }
 
       // Fetch top products
       const productsResponse = await fetch(
-        `/api/seller/analytics/top-products?period=${timeRange}`,
+        `/api/seller/analytics/top-products?timeRange=${timeRange}`,
         {
-          headers,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       if (productsResponse.ok) {
-        const products = await productsResponse.json();
-        setTopProducts(products.data);
+        const productsData = await productsResponse.json();
+        setTopProducts(productsData.products);
       }
 
       // Fetch customer analytics
       const customerResponse = await fetch(
-        `/api/seller/analytics/customers?period=${timeRange}`,
+        `/api/seller/analytics/customers?timeRange=${timeRange}`,
         {
-          headers,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       if (customerResponse.ok) {
-        const customers = await customerResponse.json();
-        setCustomerData(customers.data);
+        const customerData = await customerResponse.json();
+        setCustomerAnalytics(customerData);
       }
 
       // Fetch daily sales
       const dailyResponse = await fetch(
-        `/api/seller/analytics/daily-sales?period=${timeRange}`,
+        `/api/seller/analytics/daily-sales?timeRange=${timeRange}`,
         {
-          headers,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       if (dailyResponse.ok) {
-        const daily = await dailyResponse.json();
-        setDailySalesData(daily.data);
+        const dailyData = await dailyResponse.json();
+        setDailySales(dailyData.data);
       }
     } catch (error) {
       console.error("Error fetching analytics data:", error);
-      // Fallback to mock data for development
-      setAnalyticsData({
-        totalRevenue: 28450,
-        totalOrders: 217,
-        totalCustomers: 126,
-        productsSold: 389,
-        revenueChange: 12.5,
-        ordersChange: 8.2,
-        customersChange: 15.3,
-        productsSoldChange: -2.1,
-      });
-
-      setRevenueData([
-        { month: "Jan", revenue: 4000, orders: 24, customers: 18 },
-        { month: "Feb", revenue: 3000, orders: 18, customers: 15 },
-        { month: "Mar", revenue: 5000, orders: 32, customers: 28 },
-        { month: "Apr", revenue: 4500, orders: 28, customers: 25 },
-        { month: "May", revenue: 6000, orders: 38, customers: 32 },
-        { month: "Jun", revenue: 5500, orders: 35, customers: 30 },
-      ]);
-
-      setCategoryData([
-        { name: "Electronics", value: 45, color: "#3B82F6", revenue: 12500 },
-        { name: "Clothing", value: 30, color: "#8B5CF6", revenue: 8200 },
-        { name: "Home & Garden", value: 15, color: "#10B981", revenue: 4100 },
-        { name: "Sports", value: 10, color: "#F59E0B", revenue: 2800 },
-      ]);
-
-      setTopProducts([
-        {
-          _id: "1",
-          name: "Wireless Headphones",
-          sales: 45,
-          revenue: 4499,
-          trend: "up",
-          imageUrl: "/placeholder.svg?height=40&width=40",
-          category: "Electronics",
-        },
-        {
-          _id: "2",
-          name: "Smart Watch",
-          sales: 32,
-          revenue: 6399,
-          trend: "up",
-          imageUrl: "/placeholder.svg?height=40&width=40",
-          category: "Electronics",
-        },
-        {
-          _id: "3",
-          name: "Bluetooth Speaker",
-          sales: 28,
-          revenue: 2239,
-          trend: "down",
-          imageUrl: "/placeholder.svg?height=40&width=40",
-          category: "Electronics",
-        },
-      ]);
-
-      setCustomerData([
-        { month: "Jan", new: 12, returning: 8, total: 20 },
-        { month: "Feb", new: 8, returning: 10, total: 18 },
-        { month: "Mar", new: 15, returning: 17, total: 32 },
-        { month: "Apr", new: 11, returning: 17, total: 28 },
-        { month: "May", new: 18, returning: 20, total: 38 },
-        { month: "Jun", new: 14, returning: 21, total: 35 },
-      ]);
-
-      setDailySalesData([
-        { day: "Mon", sales: 120, orders: 8 },
-        { day: "Tue", sales: 190, orders: 12 },
-        { day: "Wed", sales: 300, orders: 18 },
-        { day: "Thu", sales: 250, orders: 15 },
-        { day: "Fri", sales: 400, orders: 25 },
-        { day: "Sat", sales: 350, orders: 22 },
-        { day: "Sun", sales: 280, orders: 17 },
-      ]);
+      // Keep mock data as fallback
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    if (token) {
-      fetchAnalyticsData();
-    }
-  }, [token, timeRange]);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchAnalyticsData();
+  const handleRefresh = () => {
+    fetchAnalyticsData();
   };
 
   const handleExportReport = async () => {
     try {
       const response = await fetch(
-        `/api/seller/analytics/export?period=${timeRange}`,
+        `/api/seller/analytics/export?timeRange=${timeRange}`,
         {
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }
       );
@@ -320,117 +327,42 @@ export default function SellerAnalyticsPage() {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
+        a.style.display = "none";
         a.href = url;
         a.download = `analytics-report-${timeRange}.pdf`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
       }
     } catch (error) {
       console.error("Error exporting report:", error);
     }
   };
 
-  const stats = analyticsData
-    ? [
-        {
-          title: "Total Revenue",
-          value: `$${analyticsData.totalRevenue.toLocaleString()}`,
-          change: `${analyticsData.revenueChange > 0 ? "+" : ""}${
-            analyticsData.revenueChange
-          }%`,
-          trend: analyticsData.revenueChange > 0 ? "up" : "down",
-          icon: DollarSign,
-          color: "text-green-600",
-          description: "vs last period",
-        },
-        {
-          title: "Total Orders",
-          value: analyticsData.totalOrders.toString(),
-          change: `${analyticsData.ordersChange > 0 ? "+" : ""}${
-            analyticsData.ordersChange
-          }%`,
-          trend: analyticsData.ordersChange > 0 ? "up" : "down",
-          icon: ShoppingCart,
-          color: "text-blue-600",
-          description: "vs last period",
-        },
-        {
-          title: "Total Customers",
-          value: analyticsData.totalCustomers.toString(),
-          change: `${analyticsData.customersChange > 0 ? "+" : ""}${
-            analyticsData.customersChange
-          }%`,
-          trend: analyticsData.customersChange > 0 ? "up" : "down",
-          icon: Users,
-          color: "text-purple-600",
-          description: "vs last period",
-        },
-        {
-          title: "Products Sold",
-          value: analyticsData.productsSold.toString(),
-          change: `${analyticsData.productsSoldChange > 0 ? "+" : ""}${
-            analyticsData.productsSoldChange
-          }%`,
-          trend: analyticsData.productsSoldChange > 0 ? "up" : "down",
-          icon: Package,
-          color: "text-orange-600",
-          description: "vs last period",
-        },
-      ]
-    : [];
+  const handleLogout = () => {
+    dispatch(logout());
+    router.push("/");
+  };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-8 w-24" />
-              </div>
-              <div className="flex items-center space-x-4">
-                <Skeleton className="h-8 w-8 rounded-full" />
-                <Skeleton className="h-8 w-8 rounded-full" />
-              </div>
-            </div>
-          </div>
-        </header>
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-NP", {
+      style: "currency",
+      currency: "NPR",
+      minimumFractionDigits: 2,
+    }).format(amount);
+  };
 
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <Skeleton className="h-4 w-24" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-8 w-20 mb-2" />
-                  <Skeleton className="h-3 w-16" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-4 w-48" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-[300px] w-full" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
+  const getGrowthIcon = (growth: number) => {
+    return growth >= 0 ? (
+      <ArrowUpRight className="h-4 w-4 text-green-600" />
+    ) : (
+      <ArrowDownRight className="h-4 w-4 text-red-600" />
     );
-  }
+  };
+
+  const getGrowthColor = (growth: number) => {
+    return growth >= 0 ? "text-green-600" : "text-red-600";
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -438,30 +370,18 @@ export default function SellerAnalyticsPage() {
       <header className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo & Back */}
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/seller/dashboard"
-                className="flex items-center text-gray-600 hover:text-gray-900"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Link>
-              <div className="h-6 w-px bg-gray-300" />
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">K</span>
-                </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  KinBech
-                </span>
-                <Badge variant="secondary" className="ml-2">
-                  Seller
-                </Badge>
+            <Link
+              href="/seller/dashboard"
+              className="flex items-center space-x-2"
+            >
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">K</span>
               </div>
-            </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                KinBech
+              </span>
+            </Link>
 
-            {/* Right Side */}
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="sm">
                 <Bell className="h-4 w-4" />
@@ -479,21 +399,24 @@ export default function SellerAnalyticsPage() {
                         alt={user?.username}
                       />
                       <AvatarFallback>
-                        {user?.username?.charAt(0)}
+                        {user?.username?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {user?.username}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
@@ -512,23 +435,13 @@ export default function SellerAnalyticsPage() {
               Analytics Dashboard
             </h1>
             <p className="text-gray-600">
-              Track your store performance and insights
+              Track your business performance and insights
             </p>
           </div>
           <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
             <Select value={timeRange} onValueChange={setTimeRange}>
               <SelectTrigger className="w-40">
+                <Calendar className="mr-2 h-4 w-4" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -539,54 +452,127 @@ export default function SellerAnalyticsPage() {
                 <SelectItem value="1year">Last year</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={handleExportReport}>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={loading}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
+            <Button onClick={handleExportReport}>
               <Download className="mr-2 h-4 w-4" />
               Export Report
             </Button>
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat) => (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {stat.title}
-                </CardTitle>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <div className="flex items-center text-xs">
-                  {stat.trend === "up" ? (
-                    <TrendingUp className="mr-1 h-3 w-3 text-green-600" />
-                  ) : (
-                    <TrendingDown className="mr-1 h-3 w-3 text-red-600" />
-                  )}
-                  <span
-                    className={
-                      stat.trend === "up" ? "text-green-600" : "text-red-600"
-                    }
-                  >
-                    {stat.change}
-                  </span>
-                  <span className="text-muted-foreground ml-1">
-                    {stat.description}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Revenue
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatCurrency(overview.totalRevenue)}
+              </div>
+              <div
+                className={`flex items-center text-xs ${getGrowthColor(
+                  overview.revenueGrowth
+                )}`}
+              >
+                {getGrowthIcon(overview.revenueGrowth)}
+                <span className="ml-1">
+                  {Math.abs(overview.revenueGrowth)}% from last period
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Orders
+              </CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {overview.totalOrders.toLocaleString()}
+              </div>
+              <div
+                className={`flex items-center text-xs ${getGrowthColor(
+                  overview.ordersGrowth
+                )}`}
+              >
+                {getGrowthIcon(overview.ordersGrowth)}
+                <span className="ml-1">
+                  {Math.abs(overview.ordersGrowth)}% from last period
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Products
+              </CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{overview.totalProducts}</div>
+              <div
+                className={`flex items-center text-xs ${getGrowthColor(
+                  overview.productsGrowth
+                )}`}
+              >
+                {getGrowthIcon(overview.productsGrowth)}
+                <span className="ml-1">
+                  {Math.abs(overview.productsGrowth)}% from last period
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Customers
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {overview.totalCustomers}
+              </div>
+              <div
+                className={`flex items-center text-xs ${getGrowthColor(
+                  overview.customersGrowth
+                )}`}
+              >
+                {getGrowthIcon(overview.customersGrowth)}
+                <span className="ml-1">
+                  {Math.abs(overview.customersGrowth)}% from last period
+                </span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          {/* Revenue Chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Revenue Trends */}
           <Card>
             <CardHeader>
-              <CardTitle>Revenue & Orders Trend</CardTitle>
+              <CardTitle>Revenue Trends</CardTitle>
               <CardDescription>
-                Monthly revenue and order trends over time
+                Monthly revenue and order trends
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -594,23 +580,27 @@ export default function SellerAnalyticsPage() {
                 <LineChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip />
-                  <Legend />
-                  <Bar
-                    yAxisId="right"
-                    dataKey="orders"
-                    fill="#8B5CF6"
-                    name="Orders"
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      name === "revenue"
+                        ? formatCurrency(Number(value))
+                        : value,
+                      name === "revenue" ? "Revenue" : "Orders",
+                    ]}
                   />
+                  <Legend />
                   <Line
-                    yAxisId="left"
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#3B82F6"
-                    strokeWidth={3}
-                    name="Revenue ($)"
+                    stroke="#8884d8"
+                    strokeWidth={2}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="orders"
+                    stroke="#82ca9d"
+                    strokeWidth={2}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -620,26 +610,33 @@ export default function SellerAnalyticsPage() {
           {/* Daily Sales */}
           <Card>
             <CardHeader>
-              <CardTitle>Daily Sales Performance</CardTitle>
+              <CardTitle>Daily Sales</CardTitle>
               <CardDescription>
-                Sales performance by day of the week
+                Sales performance over the last week
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dailySalesData}>
+                <BarChart data={dailySales}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
+                  <XAxis dataKey="date" />
                   <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="sales" fill="#10B981" name="Sales ($)" />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      name === "sales" ? formatCurrency(Number(value)) : value,
+                      name === "sales" ? "Sales" : "Orders",
+                    ]}
+                  />
+                  <Legend />
+                  <Bar dataKey="sales" fill="#8884d8" />
+                  <Bar dataKey="orders" fill="#82ca9d" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Category Distribution */}
           <Card>
             <CardHeader>
@@ -649,15 +646,18 @@ export default function SellerAnalyticsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
                     data={categoryData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={120}
-                    paddingAngle={5}
+                    labelLine={false}
+                    label={({ name, percent }) =>
+                      `${name} ${(percent * 100).toFixed(0)}%`
+                    }
+                    outerRadius={80}
+                    fill="#8884d8"
                     dataKey="value"
                   >
                     {categoryData.map((entry, index) => (
@@ -665,177 +665,183 @@ export default function SellerAnalyticsPage() {
                     ))}
                   </Pie>
                   <Tooltip />
-                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          {/* Customer Analytics */}
-          <Card>
+          {/* Top Products */}
+          <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Customer Analytics</CardTitle>
+              <CardTitle>Top Performing Products</CardTitle>
               <CardDescription>
-                New vs returning customers over time
+                Your best-selling products this period
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={customerData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Area
-                    type="monotone"
-                    dataKey="new"
-                    stackId="1"
-                    stroke="#3B82F6"
-                    fill="#3B82F6"
-                    name="New Customers"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="returning"
-                    stackId="1"
-                    stroke="#8B5CF6"
-                    fill="#8B5CF6"
-                    name="Returning Customers"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div className="space-y-4">
+                {topProducts.map((product, index) => (
+                  <div
+                    key={product._id}
+                    className="flex items-center space-x-4 p-4 border rounded-lg"
+                  >
+                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-600 rounded-full font-semibold">
+                      {index + 1}
+                    </div>
+                    <Image
+                      src={product.imageUrl || "/placeholder.svg"}
+                      alt={product.name}
+                      width={50}
+                      height={50}
+                      className="rounded object-cover"
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-semibold">{product.name}</h4>
+                      <p className="text-sm text-gray-500">
+                        {product.category}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">
+                        {formatCurrency(product.revenue)}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {product.totalSold} sold
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Top Products Performance */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Top Selling Products</CardTitle>
-            <CardDescription>
-              Your best performing products this period
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {topProducts.map((product, index) => (
-                <div
-                  key={product._id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-600 rounded-full text-sm font-bold">
-                      {index + 1}
-                    </div>
-                    <img
-                      src={product.imageUrl || "/placeholder.svg"}
-                      alt={product.name}
-                      className="w-12 h-12 object-cover rounded-lg"
-                    />
-                    <div>
-                      <h4 className="font-semibold">{product.name}</h4>
-                      <p className="text-sm text-gray-600">
-                        {product.sales} units sold • {product.category}
-                      </p>
-                    </div>
+        {/* Customer Analytics */}
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Customer Analytics</CardTitle>
+              <CardDescription>
+                Insights about your customer base
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">
+                    {customerAnalytics.newCustomers}
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <p className="font-bold">
-                        ${product.revenue.toLocaleString()}
-                      </p>
-                      <p className="text-sm text-gray-600">Revenue</p>
-                    </div>
-                    {product.trend === "up" ? (
-                      <TrendingUp className="h-5 w-5 text-green-600" />
-                    ) : (
-                      <TrendingDown className="h-5 w-5 text-red-600" />
-                    )}
-                  </div>
+                  <p className="text-sm text-gray-500">New Customers</p>
+                  <Badge variant="secondary" className="mt-2">
+                    {(
+                      (customerAnalytics.newCustomers /
+                        customerAnalytics.totalCustomers) *
+                      100
+                    ).toFixed(1)}
+                    %
+                  </Badge>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Key Insights */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Key Insights & Recommendations</CardTitle>
-            <CardDescription>
-              AI-powered insights about your store performance
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {analyticsData && analyticsData.revenueChange > 0 && (
-                <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-green-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-green-800">
-                      Strong Growth Trend
-                    </h4>
-                    <p className="text-sm text-green-700">
-                      Your revenue has increased by{" "}
-                      {analyticsData.revenueChange}% compared to the previous
-                      period.
-                      {categoryData.length > 0 &&
-                        ` ${categoryData[0].name} category is performing exceptionally well with ${categoryData[0].value}% of total sales.`}
-                    </p>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600">
+                    {customerAnalytics.returningCustomers}
                   </div>
+                  <p className="text-sm text-gray-500">Returning Customers</p>
+                  <Badge variant="secondary" className="mt-2">
+                    {(
+                      (customerAnalytics.returningCustomers /
+                        customerAnalytics.totalCustomers) *
+                      100
+                    ).toFixed(1)}
+                    %
+                  </Badge>
                 </div>
-              )}
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-purple-600">
+                    {customerAnalytics.totalCustomers}
+                  </div>
+                  <p className="text-sm text-gray-500">Total Customers</p>
+                  <Badge variant="outline" className="mt-2">
+                    Active Base
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-              {analyticsData && analyticsData.customersChange > 10 && (
+        {/* Insights and Recommendations */}
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Business Insights</CardTitle>
+              <CardDescription>
+                AI-powered recommendations for your business
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
                 <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg">
-                  <Users className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <TrendingUp className="h-5 w-5 text-blue-600 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-blue-800">
-                      Customer Growth Success
+                    <h4 className="font-semibold text-blue-900">
+                      Revenue Growth Opportunity
                     </h4>
                     <p className="text-sm text-blue-700">
-                      Your customer base has grown by{" "}
-                      {analyticsData.customersChange}% this period. Consider
-                      implementing a loyalty program to increase retention and
-                      encourage repeat purchases.
+                      Your electronics category is performing{" "}
+                      {overview.revenueGrowth > 0
+                        ? "exceptionally well"
+                        : "below average"}
+                      . Consider{" "}
+                      {overview.revenueGrowth > 0
+                        ? "expanding your electronics inventory"
+                        : "reviewing your pricing strategy"}
+                      .
                     </p>
                   </div>
                 </div>
-              )}
-
-              <div className="flex items-start space-x-3 p-4 bg-yellow-50 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-yellow-800">
-                    Inventory Management
-                  </h4>
-                  <p className="text-sm text-yellow-700">
-                    Monitor your top-selling products closely to avoid
-                    stockouts.
-                    {topProducts.length > 0 &&
-                      ` Products like ${topProducts[0].name} are in high demand and may need restocking soon.`}
-                  </p>
+                <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-lg">
+                  <Users className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-green-900">
+                      Customer Retention
+                    </h4>
+                    <p className="text-sm text-green-700">
+                      {(
+                        (customerAnalytics.returningCustomers /
+                          customerAnalytics.totalCustomers) *
+                        100
+                      ).toFixed(1)}
+                      % of your customers are returning buyers. Consider
+                      implementing a loyalty program to increase retention.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-4 bg-purple-50 rounded-lg">
+                  <Package className="h-5 w-5 text-purple-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-purple-900">
+                      Product Performance
+                    </h4>
+                    <p className="text-sm text-purple-700">
+                      Your top product "{topProducts[0]?.name}" accounts for a
+                      significant portion of sales. Consider creating similar
+                      products or bundles to maximize revenue.
+                    </p>
+                  </div>
                 </div>
               </div>
-
-              <div className="flex items-start space-x-3 p-4 bg-purple-50 rounded-lg">
-                <Target className="h-5 w-5 text-purple-600 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-purple-800">
-                    Optimization Opportunity
-                  </h4>
-                  <p className="text-sm text-purple-700">
-                    Analyze your daily sales patterns to identify peak
-                    performance days. Consider running targeted promotions
-                    during high-traffic periods to maximize revenue potential.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
+  );
+}
+
+export default function SellerAnalyticsPage() {
+  return (
+    <RouteGuard allowedRoles={["seller"]}>
+      <SellerAnalyticsContent />
+    </RouteGuard>
   );
 }

@@ -6,39 +6,23 @@ interface OrderItem {
     _id: string
     name: string
     price: number
-    imageUrl: string
+    imageUrl?: string
   }
   quantity: number
   price: number
-  sellerId: {
-    _id: string
-    username: string
-  }
+  sellerId: string // backend returns just sellerId, not object
+  createdAt: string
+  updatedAt: string
 }
 
 interface Order {
   _id: string
-  buyerId: {
-    _id: string
-    username: string
-    email: string
-  }
-  sellerId?: {
-    _id: string
-    username: string
-    email: string
-  }
-  orderItems: OrderItem[]
+  buyerId: string
   total: number
   status: "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED" | "COMPLETED"
-  payment: {
-    _id: string
-    amount: number
-    method: "COD" | "ESEWA" | "KHALTI"
-    status: "UNPAID" | "PAID"
-    transaction_uuid?: string
-  }
-  shippingInfo: {
+  items: OrderItem[] // ✅ changed from orderItems to items
+  paymentMethod?: "COD" | "ESEWA" | "KHALTI"
+  shippingInfo?: {
     name?: string
     address?: string
     city?: string
@@ -80,25 +64,23 @@ const orderSlice = createSlice({
     addOrder: (state, action: PayloadAction<Order>) => {
       state.orders.unshift(action.payload)
     },
-    updateOrderStatus: (state, action: PayloadAction<{ orderId: string; status: Order["status"] }>) => {
-      // Update in seller orders
-      const sellerOrder = state.sellerOrders.find((order) => order._id === action.payload.orderId)
-      if (sellerOrder) {
-        sellerOrder.status = action.payload.status
-        sellerOrder.updatedAt = new Date().toISOString()
+    updateOrderStatus: (
+      state,
+      action: PayloadAction<{ orderId: string; status: Order["status"] }>
+    ) => {
+      const { orderId, status } = action.payload
+
+      const update = (o?: Order) => {
+        if (o) {
+          o.status = status
+          o.updatedAt = new Date().toISOString()
+        }
       }
 
-      // Update in all orders
-      const order = state.orders.find((order) => order._id === action.payload.orderId)
-      if (order) {
-        order.status = action.payload.status
-        order.updatedAt = new Date().toISOString()
-      }
-
-      // Update current order if it matches
-      if (state.currentOrder && state.currentOrder._id === action.payload.orderId) {
-        state.currentOrder.status = action.payload.status
-        state.currentOrder.updatedAt = new Date().toISOString()
+      update(state.sellerOrders.find((o) => o._id === orderId))
+      update(state.orders.find((o) => o._id === orderId))
+      if (state.currentOrder && state.currentOrder._id === orderId) {
+        update(state.currentOrder)
       }
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -110,6 +92,14 @@ const orderSlice = createSlice({
   },
 })
 
-export const { setOrders, setSellerOrders, setCurrentOrder, addOrder, updateOrderStatus, setLoading, setError } =
-  orderSlice.actions
+export const {
+  setOrders,
+  setSellerOrders,
+  setCurrentOrder,
+  addOrder,
+  updateOrderStatus,
+  setLoading,
+  setError,
+} = orderSlice.actions
+
 export default orderSlice.reducer

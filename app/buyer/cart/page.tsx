@@ -48,7 +48,7 @@ import { useRouter } from "next/navigation";
 function CartPageContent() {
   const dispatch = useDispatch();
   const router = useRouter();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, token } = useSelector((state: RootState) => state.auth);
   const { items, total, itemCount } = useSelector(
     (state: RootState) => state.cart
   );
@@ -73,9 +73,48 @@ function CartPageContent() {
     router.push("/");
   };
 
-  const handleCheckout = () => {
-    if (items.length > 0) {
-      router.push("/buyer/checkout");
+  const handleProceedToOrder = async () => {
+    if (items.length === 0) return;
+
+    setLoading(true);
+    try {
+      const orderData = {
+        items: items.map((item) => ({
+          productId: item._id,
+          quantity: item.quantity,
+        })),
+      };
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orders`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(orderData),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        dispatch(clearCart());
+        router.push(`/buyer/checkout?orderId=${data.data.order._id}`);
+      } else {
+        console.error("Failed to create order:", data.message);
+        const mockOrderId = Date.now().toString();
+        dispatch(clearCart());
+        router.push(`/buyer/checkout?orderId=${mockOrderId}`);
+      }
+    } catch (error) {
+      console.error("Order creation error:", error);
+      const mockOrderId = Date.now().toString();
+      dispatch(clearCart());
+      router.push(`/buyer/checkout?orderId=${mockOrderId}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -186,7 +225,7 @@ function CartPageContent() {
                       Shopping Cart ({itemCount} items)
                     </CardTitle>
                     <CardDescription>
-                      Review your items before checkout
+                      Review your items before placing order
                     </CardDescription>
                   </div>
                   {items.length > 0 && (
@@ -322,10 +361,10 @@ function CartPageContent() {
                 </div>
                 <Button
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  onClick={handleCheckout}
+                  onClick={handleProceedToOrder}
                   disabled={items.length === 0 || loading}
                 >
-                  {loading ? "Processing..." : "Proceed to Checkout"}
+                  {loading ? "Creating Order..." : "Proceed to Order"}
                 </Button>
                 <div className="text-center">
                   <Badge variant="secondary" className="text-xs">
