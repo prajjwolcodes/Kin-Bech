@@ -38,8 +38,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RouteGuard } from "@/components/auth/routeGuard";
 import { useRouter } from "next/navigation";
-import { se } from "date-fns/locale";
-import { set } from "date-fns";
 
 function OrderConfirmationContent() {
   const dispatch = useDispatch();

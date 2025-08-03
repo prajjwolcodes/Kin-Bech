@@ -109,6 +109,7 @@ function CheckoutPageContent() {
       );
 
       const data = await response.json();
+      console.log("Fetched Order Details:", data);
       if (response.ok) {
         dispatch(
           setCurrentOrder({
@@ -220,11 +221,14 @@ function CheckoutPageContent() {
           body: JSON.stringify({
             shippingInfo,
             paymentMethod: method,
+            SUCCESS_URL: `${window.location.origin}/buyer/payment-success?orderId=${orderId}&data=`,
+            FAILURE_URL: `${window.location.origin}/buyer/payment-failure?orderId=${orderId}&data=`,
           }),
         }
       );
 
       const updateData = await updateResponse.json();
+      console.log(updateData);
 
       if (updateResponse.ok) {
         dispatch(
@@ -234,28 +238,8 @@ function CheckoutPageContent() {
           })
         );
 
-        // Initiate payment
-        const paymentResponse = await fetch(
-          `/api/payments/${method.toLowerCase()}/initiate`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              orderId,
-              amount: updateData.data.order.total,
-              return_url: `${window.location.origin}/buyer/payment-success?orderId=${orderId}`,
-              failure_url: `${window.location.origin}/buyer/payment-failure?orderId=${orderId}`,
-            }),
-          }
-        );
-
-        const paymentData = await paymentResponse.json();
-
-        if (paymentResponse.ok && paymentData.payment_url) {
-          window.location.href = paymentData.payment_url;
+        if (updateResponse.ok && updateData.url) {
+          window.location.href = updateData.url;
         } else {
           setError("Failed to initiate payment");
         }

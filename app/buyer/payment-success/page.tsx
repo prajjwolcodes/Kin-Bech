@@ -21,46 +21,61 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RouteGuard } from "@/components/auth/routeGuard";
 import { useRouter } from "next/navigation";
+import { decodeEsewaData } from "@/lib/decodeEsewaData"; // Adjust the import path as necessary
 
 function PaymentSuccessContent() {
   const dispatch = useDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const rawData = searchParams.get("data") || "";
+  const encodedData = rawData.startsWith("?data=")
+    ? rawData.replace("?data=", "")
+    : rawData;
   const orderId = searchParams.get("orderId");
+
+  console.log("Encoded Esewa Data:", encodedData);
+  console.log("Order ID:", orderId);
+
   const { user, token } = useSelector((state: RootState) => state.auth);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (orderId) {
-      verifyPayment();
-    }
-  }, [orderId]);
+    verifyPayment();
+  }, []);
 
   const verifyPayment = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/payments/verify`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          orderId,
-          // Add other payment verification parameters from URL
-          transaction_uuid: searchParams.get("transaction_uuid"),
-          pidx: searchParams.get("pidx"),
-        }),
-      });
+      const decoded = decodeEsewaData(encodedData!);
+      console.log("Decoded Esewa Data:", decoded);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/checkout/verify`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            orderId,
+            status: decoded.status,
+            transaction_uuid: decoded.transaction_uuid,
+            amount: decoded.total_amount, // Payment ID from the query params
+          }),
+        }
+      );
 
       const data = await response.json();
+      console.log(data, "Payment Verification Response");
 
       if (response.ok && data.success) {
         // Payment verified successfully
         dispatch(setCurrentOrder(data.order));
         setTimeout(() => {
-          router.push(`/buyer/order-confirmation?orderId=${orderId}`);
+          router.push(`/buyer/order-confirmation?orderId=${data.order._id}`);
         }, 3000);
       } else {
         setError("Payment verification failed");
@@ -70,11 +85,7 @@ function PaymentSuccessContent() {
       }
     } catch (error) {
       console.error("Payment verification error:", error);
-      setError("Network error during payment verification");
-      // Fallback: assume success for development
-      setTimeout(() => {
-        router.push(`/buyer/order-confirmation?orderId=${orderId}`);
-      }, 3000);
+      setError("An error occurred while verifying the payment");
     } finally {
       setLoading(false);
     }
@@ -163,35 +174,20 @@ function PaymentSuccessContent() {
         <div className="max-w-md mx-auto">
           <Card>
             <CardContent className="text-center py-12">
-              {error ? (
-                <>
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
-                    <Package className="w-8 h-8 text-red-600" />
-                  </div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    Payment Failed
-                  </h1>
-                  <p className="text-gray-600 mb-6">{error}</p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Redirecting you back to checkout...
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                    <CheckCircle className="w-8 h-8 text-green-600" />
-                  </div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    Payment Successful!
-                  </h1>
-                  <p className="text-gray-600 mb-6">
-                    Your payment has been processed successfully.
-                  </p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Redirecting you to order confirmation...
-                  </p>
-                </>
-              )}
+              <>
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  Payment Successful!
+                </h1>
+                <p className="text-gray-600 mb-6">
+                  Your payment has been processed successfully.
+                </p>
+                <p className="text-sm text-gray-500 mb-4">
+                  Redirecting you to order confirmation...
+                </p>
+              </>
 
               <div className="flex justify-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
