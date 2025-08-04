@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import type { RootState } from "@/lib/store";
 import { setCurrentOrder } from "@/lib/features/orders/orderSlice";
 import { logout } from "@/lib/features/auth/authSlice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Package, Bell, LogOut } from "lucide-react";
+import { CheckCircle, Package, Bell, LogOut, XCircle } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -27,14 +27,10 @@ function PaymentSuccessContent() {
   const dispatch = useDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pidx = searchParams.get("pidx");
   const rawData = searchParams.get("data") || "";
-  const encodedData = rawData.startsWith("?data=")
-    ? rawData.replace("?data=", "")
-    : rawData;
-  const orderId = searchParams.get("orderId");
 
-  console.log("Encoded Esewa Data:", encodedData);
-  console.log("Order ID:", orderId);
+  const { id: orderId } = useParams();
 
   const { user, token } = useSelector((state: RootState) => state.auth);
 
@@ -42,14 +38,34 @@ function PaymentSuccessContent() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!orderId) {
+      setError("Missing order ID");
+      setLoading(false);
+      return;
+    }
     verifyPayment();
-  }, []);
+  }, [orderId, rawData, pidx]);
 
   const verifyPayment = async () => {
     setLoading(true);
+    setError("");
     try {
-      const decoded = decodeEsewaData(encodedData!);
-      console.log("Decoded Esewa Data:", decoded);
+      let body: any = { orderId };
+
+      if (rawData) {
+        // Esewa flow
+        const decoded = decodeEsewaData(rawData);
+        body.status = decoded.status;
+        body.transaction_uuid = decoded.transaction_uuid;
+        body.amount = decoded.total_amount;
+        body.gateway = "ESEWA";
+      } else if (pidx) {
+        // Khalti flow
+        body.pidx = pidx;
+        body.gateway = "KHALTI";
+      } else {
+        throw new Error("No payment data provided");
+      }
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/checkout/verify`,
@@ -59,53 +75,38 @@ function PaymentSuccessContent() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            orderId,
-            status: decoded.status,
-            transaction_uuid: decoded.transaction_uuid,
-            amount: decoded.total_amount, // Payment ID from the query params
-          }),
+          body: JSON.stringify(body),
         }
       );
 
       const data = await response.json();
-      console.log(data, "Payment Verification Response");
 
       if (response.ok && data.success) {
-        // Payment verified successfully
         dispatch(setCurrentOrder(data.order));
         setTimeout(() => {
           router.push(`/buyer/order-confirmation?orderId=${data.order._id}`);
         }, 3000);
-      } else {
-        setError("Payment verification failed");
-        setTimeout(() => {
-          router.push(`/buyer/checkout?orderId=${orderId}`);
-        }, 3000);
       }
-    } catch (error) {
-      console.error("Payment verification error:", error);
+    } catch (err) {
+      console.error("Payment verification error:", err);
       setError("An error occurred while verifying the payment");
     } finally {
       setLoading(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Verifying payment...</p>
+      </div>
+    );
+  }
+
   const handleLogout = () => {
     dispatch(logout());
     router.push("/");
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying your payment...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -174,7 +175,7 @@ function PaymentSuccessContent() {
         <div className="max-w-md mx-auto">
           <Card>
             <CardContent className="text-center py-12">
-              <>
+              <div>
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
                   <CheckCircle className="w-8 h-8 text-green-600" />
                 </div>
@@ -187,7 +188,7 @@ function PaymentSuccessContent() {
                 <p className="text-sm text-gray-500 mb-4">
                   Redirecting you to order confirmation...
                 </p>
-              </>
+              </div>
 
               <div className="flex justify-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>

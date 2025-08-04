@@ -220,9 +220,9 @@ function CheckoutPageContent() {
           },
           body: JSON.stringify({
             shippingInfo,
-            paymentMethod: method,
-            SUCCESS_URL: `${window.location.origin}/buyer/payment-success?orderId=${orderId}&data=`,
-            FAILURE_URL: `${window.location.origin}/buyer/payment-failure?orderId=${orderId}&data=`,
+            paymentMethod,
+            SUCCESS_URL: `${window.location.origin}/buyer/payment-success/${orderId}`,
+            FAILURE_URL: `${window.location.origin}/buyer/payment-failure/${orderId}`,
           }),
         }
       );
