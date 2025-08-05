@@ -1,17 +1,41 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useSelector } from "react-redux"
-import type { RootState } from "@/lib/store"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/lib/store";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -19,8 +43,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users,
   Search,
@@ -43,66 +67,71 @@ import {
   User,
   Edit,
   Trash2,
-} from "lucide-react"
-import Link from "next/link"
+} from "lucide-react";
+import Link from "next/link";
 
 // Interface matching your backend User model
 interface BackendUser {
-  _id: string
-  username: string
-  email: string
-  password?: string
-  role: "buyer" | "seller" | "admin"
-  createdAt: string
-  updatedAt?: string
+  _id: string;
+  username: string;
+  email: string;
+  password?: string;
+  role: "buyer" | "seller" | "admin";
+  createdAt: string;
+  updatedAt?: string;
 }
 
 // Extended interface for frontend display with calculated stats
 interface DisplayUser extends BackendUser {
-  avatar?: string
+  avatar?: string;
   stats?: {
-    totalOrders?: number
-    totalSpent?: number
-    totalRevenue?: number
-    productsListed?: number
-    averageRating?: number
-    totalReviews?: number
-  }
-  lastActive?: string
+    totalOrders?: number;
+    totalSpent?: number;
+    totalRevenue?: number;
+    productsListed?: number;
+    averageRating?: number;
+    totalReviews?: number;
+  };
+  lastActive?: string;
 }
 
 export default function AdminUsersPage() {
-  const { user } = useSelector((state: RootState) => state.auth)
-  const [users, setUsers] = useState<DisplayUser[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [roleFilter, setRoleFilter] = useState("all")
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
-  const [selectedUser, setSelectedUser] = useState<DisplayUser | null>(null)
-  const [isUserDetailOpen, setIsUserDetailOpen] = useState(false)
-  const [bulkAction, setBulkAction] = useState("")
+  const { user } = useSelector((state: RootState) => state.auth);
+  const [users, setUsers] = useState<DisplayUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedUser, setSelectedUser] = useState<DisplayUser | null>(null);
+  const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
+  const [bulkAction, setBulkAction] = useState("");
 
   // Fetch users from backend
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    fetchUsers();
+  }, []);
 
   const fetchUsers = async () => {
     try {
-      setLoading(true)
-      const response = await fetch("/api/admin/users", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-      })
+      setLoading(true);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/users`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         // Transform backend data to include display properties
         const transformedUsers = data.users.map((user: BackendUser) => ({
           ...user,
-          avatar: `/placeholder.svg?height=40&width=40&text=${user.username.charAt(0).toUpperCase()}`,
+          avatar: `/placeholder.svg?height=40&width=40&text=${user.username
+            .charAt(0)
+            .toUpperCase()}`,
           stats: {
             totalOrders: 0,
             totalSpent: 0,
@@ -112,38 +141,38 @@ export default function AdminUsersPage() {
             totalReviews: 0,
           },
           lastActive: new Date().toISOString(),
-        }))
-        setUsers(transformedUsers)
+        }));
+        setUsers(transformedUsers);
       } else {
-        console.error("Failed to fetch users")
+        console.error("Failed to fetch users");
       }
     } catch (error) {
-      console.error("Error fetching users:", error)
+      console.error("Error fetching users:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesRole = roleFilter === "all" || user.role === roleFilter
-    return matchesSearch && matchesRole
-  })
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
 
   const getRoleColor = (role: string) => {
     switch (role) {
       case "seller":
-        return "bg-purple-100 text-purple-800"
+        return "bg-purple-100 text-purple-800";
       case "buyer":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800";
       case "admin":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const handleUserAction = async (userId: string, action: string) => {
     try {
@@ -154,17 +183,17 @@ export default function AdminUsersPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ action }),
-      })
+      });
 
       if (response.ok) {
-        await fetchUsers() // Refresh the users list
+        await fetchUsers(); // Refresh the users list
       } else {
-        console.error("Failed to update user")
+        console.error("Failed to update user");
       }
     } catch (error) {
-      console.error("Error updating user:", error)
+      console.error("Error updating user:", error);
     }
-  }
+  };
 
   const handleBulkAction = async () => {
     if (bulkAction && selectedUsers.length > 0) {
@@ -179,20 +208,20 @@ export default function AdminUsersPage() {
             userIds: selectedUsers,
             action: bulkAction,
           }),
-        })
+        });
 
         if (response.ok) {
-          await fetchUsers()
-          setSelectedUsers([])
-          setBulkAction("")
+          await fetchUsers();
+          setSelectedUsers([]);
+          setBulkAction("");
         } else {
-          console.error("Failed to perform bulk action")
+          console.error("Failed to perform bulk action");
         }
       } catch (error) {
-        console.error("Error performing bulk action:", error)
+        console.error("Error performing bulk action:", error);
       }
     }
-  }
+  };
 
   const viewUserDetails = async (user: DisplayUser) => {
     try {
@@ -202,27 +231,27 @@ export default function AdminUsersPage() {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json",
         },
-      })
+      });
 
       if (response.ok) {
-        const detailedUser = await response.json()
-        setSelectedUser({ ...user, ...detailedUser })
+        const detailedUser = await response.json();
+        setSelectedUser({ ...user, ...detailedUser });
       } else {
-        setSelectedUser(user)
+        setSelectedUser(user);
       }
     } catch (error) {
-      console.error("Error fetching user details:", error)
-      setSelectedUser(user)
+      console.error("Error fetching user details:", error);
+      setSelectedUser(user);
     }
-    setIsUserDetailOpen(true)
-  }
+    setIsUserDetailOpen(true);
+  };
 
   const userStats = {
     total: users.length,
     buyers: users.filter((u) => u.role === "buyer").length,
     sellers: users.filter((u) => u.role === "seller").length,
     admins: users.filter((u) => u.role === "admin").length,
-  }
+  };
 
   if (loading) {
     return (
@@ -232,7 +261,7 @@ export default function AdminUsersPage() {
           <p className="text-gray-600">Loading users...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -243,7 +272,10 @@ export default function AdminUsersPage() {
           <div className="flex items-center justify-between">
             {/* Logo & Back */}
             <div className="flex items-center space-x-4">
-              <Link href="/admin/dashboard" className="flex items-center text-gray-600 hover:text-gray-900">
+              <Link
+                href="/admin/dashboard"
+                className="flex items-center text-gray-600 hover:text-gray-900"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Link>
@@ -269,9 +301,15 @@ export default function AdminUsersPage() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full"
+                  >
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder-admin.jpg" alt={user?.username} />
+                      <AvatarImage
+                        src="/placeholder-admin.jpg"
+                        alt={user?.username}
+                      />
                       <AvatarFallback>
                         <Shield className="h-4 w-4" />
                       </AvatarFallback>
@@ -302,8 +340,12 @@ export default function AdminUsersPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-            <p className="text-gray-600">Manage all platform users, sellers, and buyers</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              User Management
+            </h1>
+            <p className="text-gray-600">
+              Manage all platform users, sellers, and buyers
+            </p>
           </div>
           <div className="flex items-center space-x-4">
             {selectedUsers.length > 0 && (
@@ -335,7 +377,9 @@ export default function AdminUsersPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">{userStats.total}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {userStats.total}
+                </p>
                 <p className="text-sm text-gray-600">Total Users</p>
               </div>
             </CardContent>
@@ -343,7 +387,9 @@ export default function AdminUsersPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{userStats.buyers}</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {userStats.buyers}
+                </p>
                 <p className="text-sm text-gray-600">Buyers</p>
               </div>
             </CardContent>
@@ -351,7 +397,9 @@ export default function AdminUsersPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">{userStats.sellers}</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {userStats.sellers}
+                </p>
                 <p className="text-sm text-gray-600">Sellers</p>
               </div>
             </CardContent>
@@ -359,7 +407,9 @@ export default function AdminUsersPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-red-600">{userStats.admins}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {userStats.admins}
+                </p>
                 <p className="text-sm text-gray-600">Admins</p>
               </div>
             </CardContent>
@@ -406,7 +456,9 @@ export default function AdminUsersPage() {
         <Card>
           <CardHeader>
             <CardTitle>Users ({filteredUsers.length})</CardTitle>
-            <CardDescription>Manage all platform users and their accounts</CardDescription>
+            <CardDescription>
+              Manage all platform users and their accounts
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -417,9 +469,9 @@ export default function AdminUsersPage() {
                       checked={selectedUsers.length === filteredUsers.length}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedUsers(filteredUsers.map((u) => u._id))
+                          setSelectedUsers(filteredUsers.map((u) => u._id));
                         } else {
-                          setSelectedUsers([])
+                          setSelectedUsers([]);
                         }
                       }}
                     />
@@ -440,9 +492,11 @@ export default function AdminUsersPage() {
                         checked={selectedUsers.includes(user._id)}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setSelectedUsers([...selectedUsers, user._id])
+                            setSelectedUsers([...selectedUsers, user._id]);
                           } else {
-                            setSelectedUsers(selectedUsers.filter((id) => id !== user._id))
+                            setSelectedUsers(
+                              selectedUsers.filter((id) => id !== user._id)
+                            );
                           }
                         }}
                       />
@@ -450,8 +504,13 @@ export default function AdminUsersPage() {
                     <TableCell>
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.username} />
-                          <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
+                          <AvatarImage
+                            src={user.avatar || "/placeholder.svg"}
+                            alt={user.username}
+                          />
+                          <AvatarFallback>
+                            {user.username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium">{user.username}</p>
@@ -464,23 +523,39 @@ export default function AdminUsersPage() {
                         {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>{user.lastActive ? new Date(user.lastActive).toLocaleDateString() : "N/A"}</TableCell>
+                    <TableCell>
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {user.lastActive
+                        ? new Date(user.lastActive).toLocaleDateString()
+                        : "N/A"}
+                    </TableCell>
                     <TableCell>
                       <div className="text-sm">
                         {user.role === "buyer" ? (
                           <>
-                            <p className="font-medium">{user.stats?.totalOrders || 0} orders</p>
-                            <p className="text-gray-500">${user.stats?.totalSpent?.toFixed(2) || "0.00"}</p>
+                            <p className="font-medium">
+                              {user.stats?.totalOrders || 0} orders
+                            </p>
+                            <p className="text-gray-500">
+                              ${user.stats?.totalSpent?.toFixed(2) || "0.00"}
+                            </p>
                           </>
                         ) : user.role === "seller" ? (
                           <>
-                            <p className="font-medium">{user.stats?.productsListed || 0} products</p>
-                            <p className="text-gray-500">${user.stats?.totalRevenue?.toFixed(2) || "0.00"}</p>
+                            <p className="font-medium">
+                              {user.stats?.productsListed || 0} products
+                            </p>
+                            <p className="text-gray-500">
+                              ${user.stats?.totalRevenue?.toFixed(2) || "0.00"}
+                            </p>
                             {(user.stats?.averageRating || 0) > 0 && (
                               <div className="flex items-center">
                                 <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                                <span className="text-xs ml-1">{user.stats?.averageRating}</span>
+                                <span className="text-xs ml-1">
+                                  {user.stats?.averageRating}
+                                </span>
                               </div>
                             )}
                           </>
@@ -497,7 +572,9 @@ export default function AdminUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => viewUserDetails(user)}>
+                          <DropdownMenuItem
+                            onClick={() => viewUserDetails(user)}
+                          >
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
@@ -527,7 +604,9 @@ export default function AdminUsersPage() {
             {filteredUsers.length === 0 && (
               <div className="text-center py-12">
                 <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-500">No users found matching your criteria.</p>
+                <p className="text-gray-500">
+                  No users found matching your criteria.
+                </p>
               </div>
             )}
           </CardContent>
@@ -538,7 +617,9 @@ export default function AdminUsersPage() {
           <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>User Details - {selectedUser?.username}</DialogTitle>
-              <DialogDescription>Complete information about this user</DialogDescription>
+              <DialogDescription>
+                Complete information about this user
+              </DialogDescription>
             </DialogHeader>
             {selectedUser && (
               <Tabs defaultValue="profile" className="w-full">
@@ -550,17 +631,23 @@ export default function AdminUsersPage() {
                 <TabsContent value="profile" className="space-y-4">
                   <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                     <Avatar className="h-16 w-16">
-                      <AvatarImage src={selectedUser.avatar || "/placeholder.svg"} alt={selectedUser.username} />
+                      <AvatarImage
+                        src={selectedUser.avatar || "/placeholder.svg"}
+                        alt={selectedUser.username}
+                      />
                       <AvatarFallback className="text-lg">
                         {selectedUser.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold">{selectedUser.username}</h3>
+                      <h3 className="text-lg font-semibold">
+                        {selectedUser.username}
+                      </h3>
                       <p className="text-gray-600">{selectedUser.email}</p>
                       <div className="flex items-center space-x-4 mt-2">
                         <Badge className={getRoleColor(selectedUser.role)}>
-                          {selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1)}
+                          {selectedUser.role.charAt(0).toUpperCase() +
+                            selectedUser.role.slice(1)}
                         </Badge>
                       </div>
                     </div>
@@ -568,22 +655,39 @@ export default function AdminUsersPage() {
 
                   <div className="space-y-4">
                     <div>
-                      <h4 className="font-semibold mb-3">Account Information</h4>
+                      <h4 className="font-semibold mb-3">
+                        Account Information
+                      </h4>
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
-                          <span>Joined: {new Date(selectedUser.createdAt).toLocaleDateString()}</span>
+                          <span>
+                            Joined:{" "}
+                            {new Date(
+                              selectedUser.createdAt
+                            ).toLocaleDateString()}
+                          </span>
                         </div>
                         {selectedUser.updatedAt && (
                           <div className="flex items-center space-x-2">
                             <Calendar className="h-4 w-4 text-gray-400" />
-                            <span>Last Updated: {new Date(selectedUser.updatedAt).toLocaleDateString()}</span>
+                            <span>
+                              Last Updated:{" "}
+                              {new Date(
+                                selectedUser.updatedAt
+                              ).toLocaleDateString()}
+                            </span>
                           </div>
                         )}
                         {selectedUser.lastActive && (
                           <div className="flex items-center space-x-2">
                             <Calendar className="h-4 w-4 text-gray-400" />
-                            <span>Last Active: {new Date(selectedUser.lastActive).toLocaleDateString()}</span>
+                            <span>
+                              Last Active:{" "}
+                              {new Date(
+                                selectedUser.lastActive
+                              ).toLocaleDateString()}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -599,8 +703,12 @@ export default function AdminUsersPage() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-sm text-gray-600">Total Orders</p>
-                                <p className="text-2xl font-bold">{selectedUser.stats?.totalOrders || 0}</p>
+                                <p className="text-sm text-gray-600">
+                                  Total Orders
+                                </p>
+                                <p className="text-2xl font-bold">
+                                  {selectedUser.stats?.totalOrders || 0}
+                                </p>
                               </div>
                               <ShoppingCart className="h-8 w-8 text-blue-600" />
                             </div>
@@ -610,9 +718,13 @@ export default function AdminUsersPage() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-sm text-gray-600">Total Spent</p>
+                                <p className="text-sm text-gray-600">
+                                  Total Spent
+                                </p>
                                 <p className="text-2xl font-bold">
-                                  ${selectedUser.stats?.totalSpent?.toFixed(2) || "0.00"}
+                                  $
+                                  {selectedUser.stats?.totalSpent?.toFixed(2) ||
+                                    "0.00"}
                                 </p>
                               </div>
                               <DollarSign className="h-8 w-8 text-green-600" />
@@ -626,9 +738,14 @@ export default function AdminUsersPage() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-sm text-gray-600">Total Revenue</p>
+                                <p className="text-sm text-gray-600">
+                                  Total Revenue
+                                </p>
                                 <p className="text-2xl font-bold">
-                                  ${selectedUser.stats?.totalRevenue?.toFixed(2) || "0.00"}
+                                  $
+                                  {selectedUser.stats?.totalRevenue?.toFixed(
+                                    2
+                                  ) || "0.00"}
                                 </p>
                               </div>
                               <DollarSign className="h-8 w-8 text-green-600" />
@@ -639,8 +756,12 @@ export default function AdminUsersPage() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-sm text-gray-600">Products Listed</p>
-                                <p className="text-2xl font-bold">{selectedUser.stats?.productsListed || 0}</p>
+                                <p className="text-sm text-gray-600">
+                                  Products Listed
+                                </p>
+                                <p className="text-2xl font-bold">
+                                  {selectedUser.stats?.productsListed || 0}
+                                </p>
                               </div>
                               <Package className="h-8 w-8 text-blue-600" />
                             </div>
@@ -650,9 +771,13 @@ export default function AdminUsersPage() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-sm text-gray-600">Average Rating</p>
+                                <p className="text-sm text-gray-600">
+                                  Average Rating
+                                </p>
                                 <p className="text-2xl font-bold">
-                                  {selectedUser.stats?.averageRating?.toFixed(1) || "0.0"}
+                                  {selectedUser.stats?.averageRating?.toFixed(
+                                    1
+                                  ) || "0.0"}
                                 </p>
                               </div>
                               <Star className="h-8 w-8 text-yellow-600" />
@@ -663,8 +788,12 @@ export default function AdminUsersPage() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-sm text-gray-600">Total Reviews</p>
-                                <p className="text-2xl font-bold">{selectedUser.stats?.totalReviews || 0}</p>
+                                <p className="text-sm text-gray-600">
+                                  Total Reviews
+                                </p>
+                                <p className="text-2xl font-bold">
+                                  {selectedUser.stats?.totalReviews || 0}
+                                </p>
                               </div>
                               <TrendingUp className="h-8 w-8 text-purple-600" />
                             </div>
@@ -676,8 +805,12 @@ export default function AdminUsersPage() {
                         <CardContent className="p-4">
                           <div className="text-center">
                             <Shield className="mx-auto h-12 w-12 text-red-600 mb-4" />
-                            <p className="text-lg font-semibold">Administrator Account</p>
-                            <p className="text-gray-600">This user has administrative privileges</p>
+                            <p className="text-lg font-semibold">
+                              Administrator Account
+                            </p>
+                            <p className="text-gray-600">
+                              This user has administrative privileges
+                            </p>
                           </div>
                         </CardContent>
                       </Card>
@@ -687,7 +820,10 @@ export default function AdminUsersPage() {
               </Tabs>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsUserDetailOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsUserDetailOpen(false)}
+              >
                 Close
               </Button>
             </DialogFooter>
@@ -695,5 +831,5 @@ export default function AdminUsersPage() {
         </Dialog>
       </div>
     </div>
-  )
+  );
 }

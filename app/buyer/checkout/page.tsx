@@ -359,7 +359,7 @@ function CheckoutPageContent() {
 
       <div className="container mx-auto px-4 py-8">
         {/* Timer Alert */}
-        {timeRemaining < 10 && (
+        {timeRemaining < 20 && (
           <Alert className="mb-6 border-orange-200 bg-orange-50">
             <Clock className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800">

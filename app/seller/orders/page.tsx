@@ -8,6 +8,7 @@ import {
   updateOrderStatus,
   setLoading,
   setError,
+  updatePaymentStatus,
 } from "@/lib/features/orders/orderSlice";
 import { logout } from "@/lib/features/auth/authSlice";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,7 @@ import {
   Filter,
   Download,
   Loader2,
+  Pen,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -95,16 +97,19 @@ function SellerOrdersContent() {
   const fetchSellerOrders = async () => {
     dispatch(setLoading(true));
     try {
-      const response = await fetch("/api/orders/seller", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/seller`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
-        dispatch(setSellerOrders(data.orders || []));
+        dispatch(setSellerOrders(data.data.orders || []));
       } else {
         throw new Error("Failed to fetch orders");
       }
@@ -119,10 +124,12 @@ function SellerOrdersContent() {
   const filteredOrders = sellerOrders.filter((order) => {
     const matchesSearch =
       order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.buyerId.username
+      (order?.buyerId?.username || "guest")
         .toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
-      order.buyerId.email.toLowerCase().includes(searchQuery.toLowerCase());
+      (order?.buyerId?.email || "guest@example.com")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || order.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -162,14 +169,17 @@ function SellerOrdersContent() {
   ) => {
     setUpdatingOrder(orderId);
     try {
-      const response = await fetch(`/api/orders/${orderId}/status`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/update/${orderId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
 
       if (response.ok) {
         dispatch(updateOrderStatus({ orderId, status: newStatus as any }));
@@ -179,6 +189,38 @@ function SellerOrdersContent() {
       }
     } catch (error) {
       console.error("Error updating order status:", error);
+      alert("Network error. Please try again.");
+    } finally {
+      setUpdatingOrder(null);
+    }
+  };
+
+  const handleUpdatePaymentStatus = async (
+    orderId: string,
+    newStatus: string
+  ) => {
+    setUpdatingOrder(orderId);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/updatepayment/${orderId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+
+      if (response.ok) {
+        dispatch(updatePaymentStatus({ orderId, status: newStatus as any }));
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Failed to update payment status");
+      }
+    } catch (error) {
+      console.error("Error updating payment status:", error);
       alert("Network error. Please try again.");
     } finally {
       setUpdatingOrder(null);
@@ -434,7 +476,7 @@ function SellerOrdersContent() {
                           <Avatar className="h-8 w-8">
                             <AvatarFallback>
                               {order.buyerId.username
-                                .split(" ")
+                                ?.split(" ")
                                 .map((n) => n[0])
                                 .join("")}
                             </AvatarFallback>
@@ -451,7 +493,7 @@ function SellerOrdersContent() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          {order.orderItems.slice(0, 2).map((item) => (
+                          {order.items.slice(0, 2).map((item) => (
                             <Image
                               key={item._id}
                               src={
@@ -463,9 +505,9 @@ function SellerOrdersContent() {
                               className="rounded object-cover"
                             />
                           ))}
-                          {order.orderItems.length > 2 && (
+                          {order.items.length > 2 && (
                             <span className="text-sm text-gray-500">
-                              +{order.orderItems.length - 2}
+                              +{order.items.length - 2}
                             </span>
                           )}
                         </div>
@@ -479,13 +521,47 @@ function SellerOrdersContent() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          className={getPaymentStatusColor(
-                            order.payment.status
-                          )}
-                        >
-                          {order.payment.status}
-                        </Badge>
+                        <div className="flex items-center justify-between">
+                          <Badge
+                            className={getPaymentStatusColor(
+                              order?.payment?.status || "UNPAID"
+                            )}
+                          >
+                            {order?.payment?.status || "UNPAID"}
+                          </Badge>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                disabled={updatingOrder === order._id}
+                              >
+                                {updatingOrder === order._id ? (
+                                  <Pen className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Pen className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleUpdatePaymentStatus(order._id, "PAID")
+                                }
+                              >
+                                PAID
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleUpdatePaymentStatus(order._id, "UNPAID")
+                                }
+                              >
+                                UNPAID
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                       <TableCell>
                         {new Date(order.createdAt).toLocaleDateString()}
@@ -627,7 +703,7 @@ function SellerOrdersContent() {
                       <Avatar className="h-10 w-10">
                         <AvatarFallback>
                           {selectedOrder.buyerId.username
-                            .split(" ")
+                            ?.split(" ")
                             .map((n: string) => n[0])
                             .join("")}
                         </AvatarFallback>

@@ -17,11 +17,18 @@ interface OrderItem {
 
 interface Order {
   _id: string
-  buyerId: string
+  buyerId: {
+    _id?: string
+    username?: string
+    email?: string
+  }
   total: number
   status: "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED" | "COMPLETED"
   items: OrderItem[] // ✅ changed from orderItems to items
-  paymentMethod?: "COD" | "ESEWA" | "KHALTI"
+  payment: {
+    method: "ESEWA" | "KHALTI" | "COD"
+    status: string // optional, only for ESEWA and KHALTI
+  } // "ESEWA" | "KHALTI" | "COD"
   shippingInfo?: {
     name?: string
     address?: string
@@ -83,6 +90,26 @@ const orderSlice = createSlice({
         update(state.currentOrder)
       }
     },
+
+    updatePaymentStatus: (
+      state,
+      action: PayloadAction<{ orderId: string; status: Order["payment"]["status"] }>
+    ) => {
+      const { orderId, status } = action.payload
+
+      const update = (o?: Order) => {
+        if (o) {
+          o.payment.status = status
+          o.updatedAt = new Date().toISOString()
+        }
+      }
+
+      update(state.sellerOrders.find((o) => o._id === orderId))
+      update(state.orders.find((o) => o._id === orderId))
+      if (state.currentOrder && state.currentOrder._id === orderId) {
+        update(state.currentOrder)
+      }
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload
     },
@@ -98,6 +125,7 @@ export const {
   setCurrentOrder,
   addOrder,
   updateOrderStatus,
+  updatePaymentStatus,
   setLoading,
   setError,
 } = orderSlice.actions

@@ -189,19 +189,6 @@ function LoginPageContent() {
                 </p>
               </div>
             </div>
-
-            {/* Demo Accounts */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">
-                Demo Accounts:
-              </p>
-              <div className="text-xs text-gray-600 space-y-1">
-                <p>Buyer: buyer@demo.com</p>
-                <p>Seller: seller@demo.com</p>
-                <p>Admin: admin@demo.com</p>
-                <p>Password: any password</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

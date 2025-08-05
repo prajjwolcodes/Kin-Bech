@@ -36,6 +36,7 @@ import {
   Bell,
   Settings,
   LogOut,
+  TriangleAlert,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -134,16 +135,19 @@ function OrdersPageContent() {
   const fetchOrders = async () => {
     dispatch(setLoading(true));
     try {
-      const response = await fetch("/api/orders/buyer", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/myorders`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
-        dispatch(setOrders(data.orders));
+        dispatch(setOrders(data.data.orders));
       } else {
         throw new Error("Failed to fetch orders");
       }
@@ -185,7 +189,7 @@ function OrdersPageContent() {
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.orderItems.some((item) =>
+      order.items.some((item) =>
         item.productId.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     const matchesStatus =
@@ -367,21 +371,31 @@ function OrdersPageContent() {
                       <CardDescription>
                         Placed on{" "}
                         {new Date(order.createdAt).toLocaleDateString()} •
-                        Payment: {order.payment.method}
+                        Payment: {order.payment?.method}
                       </CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Badge className={getStatusColor(order.status)}>
                         {order.status}
                       </Badge>
-                      <Link
-                        href={`/buyer/order-confirmation?orderId=${order._id}`}
-                      >
-                        <Button variant="outline" size="sm">
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </Button>
-                      </Link>
+
+                      {order.status === "PENDING" ? (
+                        <Link href={`/buyer/checkout?orderId=${order._id}`}>
+                          <Button variant="outline" size="sm">
+                            <TriangleAlert className="mr-2 h-4 w-4" />
+                            Complete your order
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/buyer/order-confirmation?orderId=${order._id}`}
+                        >
+                          <Button variant="outline" size="sm">
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -389,7 +403,7 @@ function OrdersPageContent() {
                   <div className="space-y-4">
                     {/* Order Items */}
                     <div className="space-y-3">
-                      {order.orderItems.map((item, index) => (
+                      {order.items.map((item, index) => (
                         <div
                           key={index}
                           className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg"
