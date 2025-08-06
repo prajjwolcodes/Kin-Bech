@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/lib/store";
 import { logout } from "@/lib/features/auth/authSlice";
@@ -119,7 +119,7 @@ const mockAllOrders = [
   },
 ];
 
-const platformAnalytics = {
+const mockPlatformAnalytics = {
   totalUsers: 1250,
   totalSellers: 89,
   totalBuyers: 1161,
@@ -128,9 +128,11 @@ const platformAnalytics = {
   platformCommission: 12500,
   activeUsers: 892,
   newUsersThisMonth: 156,
+  orderGrowth: 12.5, // Percentage growth from last month
+  revenueGrowth: 8.3, // Percentage growth from last month
 };
 
-const revenueData = [
+const mockRevenueData = [
   { month: "Jan", revenue: 8500, commission: 850, orders: 145 },
   { month: "Feb", revenue: 9200, commission: 920, orders: 167 },
   { month: "Mar", revenue: 11000, commission: 1100, orders: 198 },
@@ -139,7 +141,7 @@ const revenueData = [
   { month: "Jun", revenue: 12800, commission: 1280, orders: 221 },
 ];
 
-const userGrowthData = [
+const mockUserGrowthData = [
   { month: "Jan", buyers: 120, sellers: 8 },
   { month: "Feb", buyers: 145, sellers: 12 },
   { month: "Mar", buyers: 167, sellers: 15 },
@@ -155,14 +157,94 @@ const categoryData = [
   { name: "Sports", value: 15, color: "#F59E0B" },
 ];
 
+const mockRecentActivity = [
+  {
+    type: "payment",
+    message: "User reported issue: Payment of ₹420.00 failed",
+    time: "2025-08-05T02:17:28.780Z",
+    color: "yellow",
+  },
+  {
+    type: "payment",
+    message: "User reported issue: Payment of ₹200.00 failed",
+    time: "2025-08-05T01:41:52.480Z",
+    color: "yellow",
+  },
+  {
+    type: "order",
+    message: "Large order completed: ₹1200.00",
+    time: "2025-08-04T13:19:52.389Z",
+    color: "blue",
+  },
+];
+
 function AdminDashboardContent() {
   const dispatch = useDispatch();
   const router = useRouter();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, token } = useSelector((state: RootState) => state.auth);
+  const [platformAnalytics, setPlatformAnalytics] = useState(
+    mockPlatformAnalytics
+  );
+  const [revenueData, setRevenueData] = useState(mockRevenueData);
+  const [userGrowthData, setUserGrowthData] = useState(mockUserGrowthData);
+  const [recentActivity, setRecentActivity] = useState(mockRecentActivity);
+
   const [activeTab, setActiveTab] = useState("overview");
   const [userFilter, setUserFilter] = useState("all");
   const [orderFilter, setOrderFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    // Simulate fetching initial data
+    async function fetchData() {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/stats`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch analytics data");
+        }
+        const data = await response.json();
+        setPlatformAnalytics(data.platformAnalytics);
+        setRevenueData(data.revenueData);
+        setUserGrowthData(data.userGrowthData);
+      } catch (error) {
+        console.error("Error fetching analytics data:", error);
+      }
+    }
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    async function fetchRecentActivity() {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/stats/recent-activity`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch recent activity");
+        }
+        const data = await response.json();
+        setRecentActivity(data.activities);
+      } catch (error) {
+        console.error("Error fetching recent activity:", error);
+      }
+    }
+
+    fetchRecentActivity();
+  }, []);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -332,7 +414,8 @@ function AdminDashboardContent() {
                     {platformAnalytics.totalOrders.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    +12% from last month
+                    {platformAnalytics.orderGrowth >= 0 ? "+ %" : ""}
+                    {platformAnalytics.orderGrowth} from last month
                   </p>
                 </CardContent>
               </Card>
@@ -349,7 +432,8 @@ function AdminDashboardContent() {
                     ₹{platformAnalytics.totalRevenue.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    +8% from last month
+                    {platformAnalytics.revenueGrowth >= 0 ? "+ %" : ""}
+                    {platformAnalytics.revenueGrowth} from last month
                   </p>
                 </CardContent>
               </Card>
@@ -366,7 +450,7 @@ function AdminDashboardContent() {
                     ₹{platformAnalytics.platformCommission.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    10% commission rate
+                    5% commission rate
                   </p>
                 </CardContent>
               </Card>
@@ -456,33 +540,24 @@ function AdminDashboardContent() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-4 p-3 bg-green-50 rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">
-                        New seller registered: Sarah Wilson
-                      </p>
-                      <p className="text-xs text-gray-500">2 hours ago</p>
+                  {recentActivity.map((activity, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex items-center space-x-4 p-3 rounded-lg bg-${activity.color}-50`}
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full bg-${activity.color}-500`}
+                      ></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">
+                          {activity.message}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(activity.time).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-4 p-3 bg-blue-50 rounded-lg">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">
-                        Large order completed: ₹299.99
-                      </p>
-                      <p className="text-xs text-gray-500">4 hours ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4 p-3 bg-yellow-50 rounded-lg">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">
-                        User reported issue: Payment failed
-                      </p>
-                      <p className="text-xs text-gray-500">6 hours ago</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>

@@ -109,6 +109,7 @@ function SellerOrdersContent() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("Fetched seller orders:", data.data);
         dispatch(setSellerOrders(data.data.orders || []));
       } else {
         throw new Error("Failed to fetch orders");
@@ -245,6 +246,11 @@ function SellerOrdersContent() {
     completed: sellerOrders.filter((o) => o.status === "COMPLETED").length,
     cancelled: sellerOrders.filter((o) => o.status === "CANCELLED").length,
   };
+
+  const subtotal = sellerOrders.reduce(
+    (sum, order) => sum + order.subOrder.subtotal,
+    0
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -469,7 +475,7 @@ function SellerOrdersContent() {
                   {filteredOrders.map((order) => (
                     <TableRow key={order._id}>
                       <TableCell className="font-medium">
-                        {order._id.slice(-8)}
+                        {order._id?.slice(-8)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-3">
@@ -493,7 +499,7 @@ function SellerOrdersContent() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          {order.items.slice(0, 2).map((item) => (
+                          {order.subOrder.items?.map((item) => (
                             <Image
                               key={item._id}
                               src={
@@ -505,15 +511,15 @@ function SellerOrdersContent() {
                               className="rounded object-cover"
                             />
                           ))}
-                          {order.items.length > 2 && (
+                          {order.subOrder.items.length > 2 && (
                             <span className="text-sm text-gray-500">
-                              +{order.items.length - 2}
+                              +{order.subOrder.items.length - 2}
                             </span>
                           )}
                         </div>
                       </TableCell>
                       <TableCell className="font-semibold">
-                        ₹{order.total.toLocaleString()}
+                        ₹{order.subOrder.subtotal.toLocaleString()}
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(order.status)}>
@@ -667,7 +673,7 @@ function SellerOrdersContent() {
           <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                Order Details - {selectedOrder?._id.slice(-8)}
+                Order Details - {selectedOrder?._id?.slice(-8)}
               </DialogTitle>
               <DialogDescription>
                 Complete information about this order

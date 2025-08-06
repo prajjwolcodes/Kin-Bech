@@ -44,10 +44,12 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RouteGuard } from "@/components/auth/routeGuard";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 function CartPageContent() {
   const dispatch = useDispatch();
   const router = useRouter();
+  const { toast } = useToast();
   const { user, token } = useSelector((state: RootState) => state.auth);
   const { items, total, itemCount } = useSelector(
     (state: RootState) => state.cart
@@ -76,6 +78,37 @@ function CartPageContent() {
   const handleProceedToOrder = async () => {
     if (items.length === 0) return;
 
+    // Check if user is authenticated
+    if (!user || !token) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to proceed with your order.",
+        variant: "destructive",
+      });
+      router.push("/auth/login");
+      return;
+    }
+
+    // Validate cart items before proceeding
+    const invalidItems = items.filter(
+      (item) =>
+        !item._id ||
+        !item.quantity ||
+        item.quantity <= 0 ||
+        !item.sellerId ||
+        item.quantity > item.count
+    );
+
+    if (invalidItems.length > 0) {
+      toast({
+        title: "Invalid Cart Items",
+        description:
+          "Some items in your cart are invalid. Please refresh the page and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const orderData = {
@@ -99,20 +132,62 @@ function CartPageContent() {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data.status === "success") {
+        // Only clear cart after successful order creation
         dispatch(clearCart());
+        toast({
+          title: "Order Created Successfully",
+          description: "Redirecting to checkout...",
+        });
         router.push(`/buyer/checkout?orderId=${data.data.order._id}`);
       } else {
-        console.error("Failed to create order:", data.message);
-        const mockOrderId = Date.now().toString();
-        dispatch(clearCart());
-        router.push(`/buyer/checkout?orderId=${mockOrderId}`);
+        // Handle specific error cases
+        const errorMessage = data.message || "Failed to create order";
+
+        if (response.status === 403) {
+          toast({
+            title: "Access Denied",
+            description: "Please make sure you're logged in as a buyer.",
+            variant: "destructive",
+          });
+        } else if (response.status === 400) {
+          toast({
+            title: "Order Creation Failed",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        } else if (errorMessage.includes("Insufficient stock")) {
+          toast({
+            title: "Insufficient Stock",
+            description:
+              "Some items in your cart are out of stock. Please update quantities and try again.",
+            variant: "destructive",
+          });
+          // Don't clear cart so user can adjust quantities
+        } else if (errorMessage.includes("not found")) {
+          toast({
+            title: "Products Unavailable",
+            description:
+              "Some products in your cart are no longer available. Please remove them and try again.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Order Failed",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        }
+
+        console.error("Failed to create order:", data);
       }
     } catch (error) {
       console.error("Order creation error:", error);
-      const mockOrderId = Date.now().toString();
-      dispatch(clearCart());
-      router.push(`/buyer/checkout?orderId=${mockOrderId}`);
+      toast({
+        title: "Network Error",
+        description: "Please check your connection and try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -360,11 +435,18 @@ function CartPageContent() {
                   <span>₹{(total * 1.1).toFixed(2)}</span>
                 </div>
                 <Button
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50"
                   onClick={handleProceedToOrder}
                   disabled={items.length === 0 || loading}
                 >
-                  {loading ? "Creating Order..." : "Proceed to Order"}
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Creating Order...
+                    </div>
+                  ) : (
+                    "Proceed to Order"
+                  )}
                 </Button>
                 <div className="text-center">
                   <Badge variant="secondary" className="text-xs">

@@ -24,7 +24,12 @@ interface Order {
   }
   total: number
   status: "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED" | "COMPLETED"
-  items: OrderItem[] // ✅ changed from orderItems to items
+  subOrder: {
+    sellerId: string
+    items: OrderItem[]
+    subtotal: number
+    status: "PENDING" | "CONFIRMED" | "DELIVERED" | "CANCELLED" | "COMPLETED"
+  }
   payment: {
     method: "ESEWA" | "KHALTI" | "COD"
     status: string // optional, only for ESEWA and KHALTI

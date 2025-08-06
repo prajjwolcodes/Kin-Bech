@@ -81,7 +81,7 @@ function PaymentSuccessContent() {
 
       const data = await response.json();
 
-      if (response.ok && data.success) {
+      if (response.ok) {
         dispatch(setCurrentOrder(data.order));
         setTimeout(() => {
           router.push(`/buyer/order-confirmation?orderId=${data.order._id}`);

@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Provider, useDispatch } from "react-redux";
 import { store } from "@/lib/store";
 import { setCredentials } from "@/lib/features/auth/authSlice";
+import { Toaster } from "@/components/ui/toaster";
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
@@ -32,7 +33,10 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        {children}
+        <Toaster />
+      </AuthProvider>
     </Provider>
   );
 }

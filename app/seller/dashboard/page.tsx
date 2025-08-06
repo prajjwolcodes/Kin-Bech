@@ -93,6 +93,15 @@ const mockRevenueData = [
   { month: "Jun", revenue: 5500 },
 ];
 
+const mockStats: SellerStats = {
+  totalProducts: 0.0,
+  totalOrders: 0.0,
+  totalRevenue: 0.0,
+  monthlyGrowth: 0.0,
+  pendingOrders: 0.0,
+  lowStockProducts: 0.0,
+};
+
 function SellerDashboardContent() {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -102,14 +111,8 @@ function SellerDashboardContent() {
   );
   const { sellerOrders } = useSelector((state: RootState) => state.orders);
 
-  const [stats, setStats] = useState<SellerStats>({
-    totalProducts: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
-    monthlyGrowth: 0,
-    pendingOrders: 0,
-    lowStockProducts: 0,
-  });
+  const [stats, setStats] = useState<SellerStats>(mockStats);
+  const [revenueData, setRevenueData] = useState(mockRevenueData);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
 
   useEffect(() => {
@@ -122,77 +125,22 @@ function SellerDashboardContent() {
     dispatch(setLoading(true));
 
     try {
-      // Fetch seller products
-      const productsResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/product/seller`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // Fetch seller orders
-      const ordersResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/seller`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
       // Fetch seller stats
-      const statsResponse = await fetch("/api/seller/stats", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (productsResponse.ok) {
-        const productsData = await productsResponse.json();
-        dispatch(setSellerProducts(productsData.products || []));
-
-        // Calculate stats from products
-        const products = productsData.products || [];
-        const lowStock = products.filter((p: any) => p.count < 10).length;
-        setStats((prev) => ({
-          ...prev,
-          totalProducts: products.length,
-          lowStockProducts: lowStock,
-        }));
-      }
-
-      if (ordersResponse.ok) {
-        const ordersData = await ordersResponse.json();
-        const orders = ordersData.orders || [];
-        dispatch(setSellerOrders(orders));
-        setRecentOrders(orders.slice(0, 5));
-
-        // Calculate order stats
-        const totalRevenue = orders.reduce(
-          (sum: number, order: any) => sum + order.total,
-          0
-        );
-        const pendingOrders = orders.filter(
-          (o: any) => o.status === "PENDING"
-        ).length;
-
-        setStats((prev) => ({
-          ...prev,
-          totalOrders: orders.length,
-          totalRevenue,
-          pendingOrders,
-          monthlyGrowth: 12.5, // This would come from backend calculation
-        }));
-      }
+      const statsResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/stats/seller`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
-        setStats(statsData.stats);
+        console.log(statsData);
+        setStats(statsData.stats || mockStats);
+        setRevenueData(statsData.revenueData || mockRevenueData);
       }
     } catch (error) {
       console.error("Error fetching seller data:", error);
@@ -320,7 +268,7 @@ function SellerDashboardContent() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.username}!
+            Welcome, {user?.username}!
           </h1>
           <p className="text-gray-600">
             Here's what's happening with your store today.
@@ -429,7 +377,7 @@ function SellerDashboardContent() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={mockRevenueData}>
+                <LineChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
