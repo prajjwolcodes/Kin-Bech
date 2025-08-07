@@ -597,9 +597,7 @@ function CheckoutPageContent() {
                     </div>
                     <div className="flex justify-between">
                       <span>Tax (10%)</span>
-                      <span>
-                        ₹{((currentOrder.total * 0.1) / 1.1).toFixed(2)}
-                      </span>
+                      <span>0.00</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between text-lg font-semibold">

@@ -31,7 +31,7 @@ export async function checkoutController(req, res) {
         status: "UNPAID",
       });
       order.payment = payment;
-      order.subOrders.status = "CONFIRMED";
+      order.subOrder.status = "CONFIRMED";
       order.status = "CONFIRMED";
       await order.save();
 

@@ -92,19 +92,14 @@ interface DisplayUser extends BackendUser {
     averageRating?: number;
     totalReviews?: number;
   };
-  lastActive?: string;
 }
 
 export default function AdminUsersPage() {
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, token } = useSelector((state: RootState) => state.auth);
   const [users, setUsers] = useState<DisplayUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [selectedUser, setSelectedUser] = useState<DisplayUser | null>(null);
-  const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
-  const [bulkAction, setBulkAction] = useState("");
 
   // Fetch users from backend
   useEffect(() => {
@@ -117,9 +112,9 @@ export default function AdminUsersPage() {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users`,
         {
+          method: "GET",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -140,7 +135,6 @@ export default function AdminUsersPage() {
             averageRating: 0,
             totalReviews: 0,
           },
-          lastActive: new Date().toISOString(),
         }));
         setUsers(transformedUsers);
       } else {
@@ -172,78 +166,6 @@ export default function AdminUsersPage() {
       default:
         return "bg-gray-100 text-gray-800";
     }
-  };
-
-  const handleUserAction = async (userId: string, action: string) => {
-    try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action }),
-      });
-
-      if (response.ok) {
-        await fetchUsers(); // Refresh the users list
-      } else {
-        console.error("Failed to update user");
-      }
-    } catch (error) {
-      console.error("Error updating user:", error);
-    }
-  };
-
-  const handleBulkAction = async () => {
-    if (bulkAction && selectedUsers.length > 0) {
-      try {
-        const response = await fetch("/api/admin/users/bulk", {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userIds: selectedUsers,
-            action: bulkAction,
-          }),
-        });
-
-        if (response.ok) {
-          await fetchUsers();
-          setSelectedUsers([]);
-          setBulkAction("");
-        } else {
-          console.error("Failed to perform bulk action");
-        }
-      } catch (error) {
-        console.error("Error performing bulk action:", error);
-      }
-    }
-  };
-
-  const viewUserDetails = async (user: DisplayUser) => {
-    try {
-      // Fetch detailed user stats
-      const response = await fetch(`/api/admin/users/${user._id}/details`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const detailedUser = await response.json();
-        setSelectedUser({ ...user, ...detailedUser });
-      } else {
-        setSelectedUser(user);
-      }
-    } catch (error) {
-      console.error("Error fetching user details:", error);
-      setSelectedUser(user);
-    }
-    setIsUserDetailOpen(true);
   };
 
   const userStats = {
@@ -348,23 +270,6 @@ export default function AdminUsersPage() {
             </p>
           </div>
           <div className="flex items-center space-x-4">
-            {selectedUsers.length > 0 && (
-              <div className="flex items-center space-x-2">
-                <Select value={bulkAction} onValueChange={setBulkAction}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Bulk Actions" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="activate">Activate Users</SelectItem>
-                    <SelectItem value="deactivate">Deactivate Users</SelectItem>
-                    <SelectItem value="delete">Delete Users</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={handleBulkAction} disabled={!bulkAction}>
-                  Apply ({selectedUsers.length})
-                </Button>
-              </div>
-            )}
             <Button variant="outline">
               <Download className="mr-2 h-4 w-4" />
               Export Users
@@ -464,43 +369,14 @@ export default function AdminUsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={selectedUsers.length === filteredUsers.length}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedUsers(filteredUsers.map((u) => u._id));
-                        } else {
-                          setSelectedUsers([]);
-                        }
-                      }}
-                    />
-                  </TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Join Date</TableHead>
-                  <TableHead>Last Active</TableHead>
-                  <TableHead>Performance</TableHead>
-                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
                   <TableRow key={user._id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedUsers.includes(user._id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedUsers([...selectedUsers, user._id]);
-                          } else {
-                            setSelectedUsers(
-                              selectedUsers.filter((id) => id !== user._id)
-                            );
-                          }
-                        }}
-                      />
-                    </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-10 w-10">
@@ -526,76 +402,6 @@ export default function AdminUsersPage() {
                     <TableCell>
                       {new Date(user.createdAt).toLocaleDateString()}
                     </TableCell>
-                    <TableCell>
-                      {user.lastActive
-                        ? new Date(user.lastActive).toLocaleDateString()
-                        : "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {user.role === "buyer" ? (
-                          <>
-                            <p className="font-medium">
-                              {user.stats?.totalOrders || 0} orders
-                            </p>
-                            <p className="text-gray-500">
-                              ${user.stats?.totalSpent?.toFixed(2) || "0.00"}
-                            </p>
-                          </>
-                        ) : user.role === "seller" ? (
-                          <>
-                            <p className="font-medium">
-                              {user.stats?.productsListed || 0} products
-                            </p>
-                            <p className="text-gray-500">
-                              ${user.stats?.totalRevenue?.toFixed(2) || "0.00"}
-                            </p>
-                            {(user.stats?.averageRating || 0) > 0 && (
-                              <div className="flex items-center">
-                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                                <span className="text-xs ml-1">
-                                  {user.stats?.averageRating}
-                                </span>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <p className="text-gray-500">Admin User</p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => viewUserDetails(user)}
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Mail className="mr-2 h-4 w-4" />
-                            Send Message
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit User
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleUserAction(user._id, "delete")}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete User
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -613,7 +419,7 @@ export default function AdminUsersPage() {
         </Card>
 
         {/* User Details Dialog */}
-        <Dialog open={isUserDetailOpen} onOpenChange={setIsUserDetailOpen}>
+        {/* <Dialog open={isUserDetailOpen} onOpenChange={setIsUserDetailOpen}>
           <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>User Details - {selectedUser?.username}</DialogTitle>
@@ -668,28 +474,6 @@ export default function AdminUsersPage() {
                             ).toLocaleDateString()}
                           </span>
                         </div>
-                        {selectedUser.updatedAt && (
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                            <span>
-                              Last Updated:{" "}
-                              {new Date(
-                                selectedUser.updatedAt
-                              ).toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
-                        {selectedUser.lastActive && (
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                            <span>
-                              Last Active:{" "}
-                              {new Date(
-                                selectedUser.lastActive
-                              ).toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -828,7 +612,7 @@ export default function AdminUsersPage() {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+        </Dialog> */}
       </div>
     </div>
   );
