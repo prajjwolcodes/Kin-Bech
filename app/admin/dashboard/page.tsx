@@ -120,16 +120,17 @@ const mockAllOrders = [
 ];
 
 const mockPlatformAnalytics = {
-  totalUsers: 1250,
-  totalSellers: 89,
-  totalBuyers: 1161,
-  totalOrders: 3456,
-  totalRevenue: 125000,
-  platformCommission: 12500,
-  activeUsers: 892,
-  newUsersThisMonth: 156,
-  orderGrowth: 12.5, // Percentage growth from last month
-  revenueGrowth: 8.3, // Percentage growth from last month
+  totalUsers: 0,
+  totalSellers: 0,
+  totalBuyers: 0,
+  totalOrders: 0,
+  completedOrders: 0,
+  totalRevenue: 0,
+  platformCommission: 0,
+  activeUsers: 0,
+  newUsersThisMonth: 0,
+  orderGrowth: 0,
+  revenueGrowth: 0,
 };
 
 const mockRevenueData = [
@@ -410,8 +411,12 @@ function AdminDashboardContent() {
                   <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className="text-2xl font-bold flex gap-2">
                     {platformAnalytics.totalOrders.toLocaleString()}
+                    <span className="text-gray-600 ">
+                      ({platformAnalytics.completedOrders.toLocaleString()}{" "}
+                      completed)
+                    </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {platformAnalytics.orderGrowth >= 0 ? "+ %" : ""}

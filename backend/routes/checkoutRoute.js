@@ -1,0 +1,17 @@
+import express from "express";
+import {
+  checkoutController,
+  verifyPayment,
+} from "../controller/checkout/checkoutController.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+router.use(authMiddleware); // Apply auth middleware to all routes in this router
+
+router.route("/:id").put(checkoutController);
+router.route("/verify").post(verifyPayment);
+
+// router.post("/payment-status");
+
+export default router;

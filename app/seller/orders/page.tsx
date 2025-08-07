@@ -132,7 +132,7 @@ function SellerOrdersContent() {
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
     const matchesStatus =
-      statusFilter === "all" || order.status === statusFilter;
+      statusFilter === "all" || order.subOrder.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -184,44 +184,13 @@ function SellerOrdersContent() {
 
       if (response.ok) {
         dispatch(updateOrderStatus({ orderId, status: newStatus as any }));
+        await fetchSellerOrders(); // Refresh orders after update
       } else {
         const errorData = await response.json();
         alert(errorData.message || "Failed to update order status");
       }
     } catch (error) {
       console.error("Error updating order status:", error);
-      alert("Network error. Please try again.");
-    } finally {
-      setUpdatingOrder(null);
-    }
-  };
-
-  const handleUpdatePaymentStatus = async (
-    orderId: string,
-    newStatus: string
-  ) => {
-    setUpdatingOrder(orderId);
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/updatepayment/${orderId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
-
-      if (response.ok) {
-        dispatch(updatePaymentStatus({ orderId, status: newStatus as any }));
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message || "Failed to update payment status");
-      }
-    } catch (error) {
-      console.error("Error updating payment status:", error);
       alert("Network error. Please try again.");
     } finally {
       setUpdatingOrder(null);
@@ -522,8 +491,10 @@ function SellerOrdersContent() {
                         ₹{order.subOrder.subtotal.toLocaleString()}
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(order.status)}>
-                          {order.status}
+                        <Badge
+                          className={getStatusColor(order.subOrder.status)}
+                        >
+                          {order.subOrder.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -536,7 +507,7 @@ function SellerOrdersContent() {
                             {order?.payment?.status || "UNPAID"}
                           </Badge>
 
-                          <DropdownMenu>
+                          {/* <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
@@ -566,7 +537,7 @@ function SellerOrdersContent() {
                                 UNPAID
                               </DropdownMenuItem>
                             </DropdownMenuContent>
-                          </DropdownMenu>
+                          </DropdownMenu> */}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -594,7 +565,7 @@ function SellerOrdersContent() {
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
-                            {order.status === "PENDING" && (
+                            {order.subOrder.status === "PENDING" && (
                               <DropdownMenuItem
                                 onClick={() =>
                                   handleUpdateOrderStatus(
@@ -607,7 +578,7 @@ function SellerOrdersContent() {
                                 Confirm Order
                               </DropdownMenuItem>
                             )}
-                            {order.status === "CONFIRMED" && (
+                            {order.subOrder.status === "CONFIRMED" && (
                               <DropdownMenuItem
                                 onClick={() =>
                                   handleUpdateOrderStatus(
@@ -620,7 +591,7 @@ function SellerOrdersContent() {
                                 Mark as Delivered
                               </DropdownMenuItem>
                             )}
-                            {order.status === "DELIVERED" && (
+                            {order.subOrder.status === "DELIVERED" && (
                               <DropdownMenuItem
                                 onClick={() =>
                                   handleUpdateOrderStatus(
@@ -633,8 +604,8 @@ function SellerOrdersContent() {
                                 Mark as Completed
                               </DropdownMenuItem>
                             )}
-                            {(order.status === "PENDING" ||
-                              order.status === "CONFIRMED") && (
+                            {(order.subOrder.status === "PENDING" ||
+                              order.subOrder.status === "CONFIRMED") && (
                               <DropdownMenuItem
                                 onClick={() =>
                                   handleUpdateOrderStatus(

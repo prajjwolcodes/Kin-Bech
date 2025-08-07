@@ -10,7 +10,11 @@ interface OrderItem {
   }
   quantity: number
   price: number
-  sellerId: string // backend returns just sellerId, not object
+  sellerId: {
+    _id: string
+    username: string
+    email: string
+  } // backend returns just sellerId, not object
   createdAt: string
   updatedAt: string
 }

@@ -418,22 +418,18 @@ function CartPageContent() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
-                  <span>Subtotal ({itemCount} items)</span>
-                  <span>₹{total.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
                   <span>Shipping</span>
                   <span className="text-green-600">Free</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Tax</span>
-                  <span>₹{(total * 0.1).toFixed(2)}</span>
+                  <span>Tax </span>
+                  <span>0.00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total ({itemCount} items)</span>
+                  <span>₹{total.toFixed(2)}</span>
                 </div>
                 <Separator />
-                <div className="flex justify-between text-lg font-semibold">
-                  <span>Total</span>
-                  <span>₹{(total * 1.1).toFixed(2)}</span>
-                </div>
                 <Button
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50"
                   onClick={handleProceedToOrder}

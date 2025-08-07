@@ -302,12 +302,12 @@ function OrderConfirmationContent() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>₹{(currentOrder.total / 1.1).toFixed(2)}</span>
+                  <span>Total</span>
+                  <span>₹{currentOrder.total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Tax (10%)</span>
-                  <span>₹{((currentOrder.total * 0.1) / 1.1).toFixed(2)}</span>
+                  <span>Tax</span>
+                  <span>0.00</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
@@ -320,7 +320,7 @@ function OrderConfirmationContent() {
                 </div>
                 <div className="text-center">
                   <Badge variant="outline">
-                    Payment Method: {currentOrder.paymentMethod}
+                    Payment Method: {currentOrder.payment.method}
                   </Badge>
                 </div>
               </CardContent>

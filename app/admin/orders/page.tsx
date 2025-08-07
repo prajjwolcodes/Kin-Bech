@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,9 +68,13 @@ import {
   RefreshCw,
   FileText,
   CreditCard,
+  Pen,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { logout } from "@/lib/features/auth/authSlice";
+import { useRouter } from "next/navigation";
+import { updatePaymentStatus } from "@/lib/features/orders/orderSlice";
 
 // Interface matching your backend models
 interface BackendUser {
@@ -129,7 +133,9 @@ interface BackendOrder {
 }
 
 export default function AdminOrdersPage() {
-  const { user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const { user, token } = useSelector((state: RootState) => state.auth);
   const [orders, setOrders] = useState<BackendOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -138,6 +144,7 @@ export default function AdminOrdersPage() {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<BackendOrder | null>(null);
   const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
 
   // Fetch orders from backend
   useEffect(() => {
@@ -191,11 +198,11 @@ export default function AdminOrdersPage() {
       case "CONFIRMED":
         return "bg-blue-100 text-blue-800";
       case "DELIVERED":
-        return "bg-green-100 text-green-800";
+        return "bg-purple-100 text-purple-800";
       case "CANCELLED":
         return "bg-red-100 text-red-800";
       case "COMPLETED":
-        return "bg-purple-100 text-purple-800";
+        return "bg-green-100 text-green-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -239,6 +246,10 @@ export default function AdminOrdersPage() {
         }
       );
 
+      const data = await response.json();
+
+      console.log(data);
+
       if (response.ok) {
         await fetchOrders(); // Refresh the orders list
       } else {
@@ -246,6 +257,39 @@ export default function AdminOrdersPage() {
       }
     } catch (error) {
       console.error("Error updating order:", error);
+    }
+  };
+
+  const handleUpdatePaymentStatus = async (
+    orderId: string,
+    newStatus: string
+  ) => {
+    setUpdatingOrder(orderId);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/updatepayment/${orderId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+
+      if (response.ok) {
+        dispatch(updatePaymentStatus({ orderId, status: newStatus as any }));
+        await fetchOrders(); // Refresh the orders list
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Failed to update payment status");
+      }
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      alert("Network error. Please try again.");
+    } finally {
+      setUpdatingOrder(null);
     }
   };
 
@@ -263,6 +307,11 @@ export default function AdminOrdersPage() {
     completed: orders.filter((o) => o.status === "COMPLETED").length,
     totalRevenue: orders.reduce((sum, o) => sum + o.total, 0),
     paidOrders: orders.filter((o) => o.payment?.status === "PAID").length,
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    router.push("/auth/login");
   };
 
   if (loading) {
@@ -337,7 +386,7 @@ export default function AdminOrdersPage() {
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Platform Settings</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
@@ -436,16 +485,6 @@ export default function AdminOrdersPage() {
                   {orderStats.paidOrders}
                 </p>
                 <p className="text-sm text-gray-600">Paid</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <p className="text-lg font-bold text-green-600">
-                  ₹{orderStats.totalRevenue.toFixed(0)}
-                </p>
-                <p className="text-sm text-gray-600">Revenue</p>
               </div>
             </CardContent>
           </Card>
@@ -597,13 +636,47 @@ export default function AdminOrdersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        className={getPaymentStatusColor(
-                          order?.payment?.status || "PENDING"
-                        )}
-                      >
-                        {order?.payment?.status || "PENDING"}
-                      </Badge>
+                      <div className="flex items-center space-x-4">
+                        <Badge
+                          className={getPaymentStatusColor(
+                            order?.payment?.status || "PENDING"
+                          )}
+                        >
+                          {order?.payment?.status || "PENDING"}
+                        </Badge>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              disabled={updatingOrder === order._id}
+                            >
+                              {updatingOrder === order._id ? (
+                                <Pen className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Pen className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleUpdatePaymentStatus(order._id, "PAID")
+                              }
+                            >
+                              PAID
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleUpdatePaymentStatus(order._id, "UNPAID")
+                              }
+                            >
+                              UNPAID
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -723,10 +796,10 @@ export default function AdminOrdersPage() {
                         <h4 className="font-semibold">Payment Status</h4>
                         <Badge
                           className={getPaymentStatusColor(
-                            selectedOrder?.payment?.status
+                            selectedOrder.payment.status
                           )}
                         >
-                          {selectedOrder?.payment?.status}
+                          {selectedOrder.payment.status}
                         </Badge>
                       </div>
                       <div>
