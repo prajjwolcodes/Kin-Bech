@@ -1,6 +1,6 @@
 export default function AdminOrdersLoading() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-[calc(100vh-5rem)] bg-gray-50">
       {/* Header Skeleton */}
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
@@ -63,7 +63,10 @@ export default function AdminOrdersLoading() {
             {/* Table Header */}
             <div className="grid grid-cols-10 gap-4 mb-4">
               {[...Array(10)].map((_, i) => (
-                <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div
+                  key={i}
+                  className="h-4 bg-gray-200 rounded animate-pulse"
+                />
               ))}
             </div>
             {/* Table Rows */}
@@ -94,5 +97,5 @@ export default function AdminOrdersLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }

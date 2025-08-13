@@ -21,7 +21,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Search,
@@ -37,16 +36,6 @@ import {
   LogOut,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RouteGuard } from "@/components/auth/routeGuard";
 import { useRouter } from "next/navigation";
 
@@ -196,19 +185,9 @@ function BuyerDashboardContent() {
     );
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    router.push("/");
-  };
-
-  const cartItemsCount = cartItems.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  );
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-5rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading products...</p>
@@ -218,120 +197,7 @@ function BuyerDashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">K</span>
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                KinBech
-              </span>
-            </Link>
-
-            {/* Search Bar */}
-            <div className="flex-1 max-w-2xl mx-8">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search products..."
-                  className="pl-10 pr-4 py-2 w-full"
-                  value={searchQuery}
-                  onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-                />
-              </div>
-            </div>
-
-            {/* Right Side */}
-            <div className="flex items-center space-x-4">
-              {/* Cart */}
-              <Link href="/buyer/cart">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="relative bg-transparent"
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  {cartItemsCount > 0 && (
-                    <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                      {cartItemsCount}
-                    </Badge>
-                  )}
-                </Button>
-              </Link>
-
-              {/* Notifications */}
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4" />
-              </Button>
-
-              {/* User Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-8 w-8 rounded-full"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src="/placeholder-user.jpg"
-                        alt={user?.username}
-                      />
-                      <AvatarFallback>
-                        {user?.username?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {user?.username}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link
-                      href="/buyer/orders"
-                      className="flex items-center w-full"
-                    >
-                      <ShoppingCart className="mr-2 h-4 w-4" />
-                      <span>My Orders</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Heart className="mr-2 h-4 w-4" />
-                    <span>Wishlist</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-[calc(100vh-5rem)] bg-gray-50">
       {/* Hero Banner */}
       <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
         <div className="container mx-auto px-4">
@@ -411,7 +277,7 @@ function BuyerDashboardContent() {
                   </div>
                   <div className="bg-gradient-to-r from-green-400 to-blue-500 text-white p-4 rounded-lg">
                     <h3 className="font-bold">Free Shipping</h3>
-                    <p className="text-sm">On orders over ₹500</p>
+                    <p className="text-sm">On orders over Rs. 500</p>
                   </div>
                 </div>
               </CardContent>
@@ -513,7 +379,7 @@ function BuyerDashboardContent() {
                         <div className="flex items-center justify-between">
                           <div>
                             <span className="text-2xl font-bold text-blue-600">
-                              ₹{product.price}
+                              Rs. {product.price}
                             </span>
                             <p className="text-sm text-gray-500">
                               {product.count} in stock

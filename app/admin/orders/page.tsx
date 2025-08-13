@@ -295,6 +295,7 @@ export default function AdminOrdersPage() {
 
   const viewOrderDetails = (order: BackendOrder) => {
     setSelectedOrder(order);
+    console.log("Viewing order details:", order);
     setIsOrderDetailOpen(true);
   };
 
@@ -316,7 +317,7 @@ export default function AdminOrdersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-5rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading orders...</p>
@@ -326,77 +327,7 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo & Back */}
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/admin/dashboard"
-                className="flex items-center text-gray-600 hover:text-gray-900"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Link>
-              <div className="h-6 w-px bg-gray-300" />
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-red-600 to-pink-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">K</span>
-                </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
-                  KinBech
-                </span>
-                <Badge variant="destructive" className="ml-2">
-                  Admin
-                </Badge>
-              </div>
-            </div>
-
-            {/* Right Side */}
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4" />
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-8 w-8 rounded-full"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src="/placeholder-admin.jpg"
-                        alt={user?.username}
-                      />
-                      <AvatarFallback>
-                        <Shield className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Admin Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Platform Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-[calc(100vh-5rem)] bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
@@ -628,7 +559,7 @@ export default function AdminOrdersPage() {
                       </div>
                     </TableCell>
                     <TableCell className="font-semibold">
-                      ₹{order.total.toFixed(2)}
+                      Rs .{order.total.toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(order.status)}>
@@ -704,46 +635,6 @@ export default function AdminOrdersPage() {
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Refresh Status
-                          </DropdownMenuItem>
-                          {order.status === "PENDING" && (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleOrderAction(order._id, "CONFIRMED")
-                              }
-                            >
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Confirm Order
-                            </DropdownMenuItem>
-                          )}
-                          {order.status === "CONFIRMED" && (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleOrderAction(order._id, "DELIVERED")
-                              }
-                            >
-                              <Truck className="mr-2 h-4 w-4" />
-                              Mark Delivered
-                            </DropdownMenuItem>
-                          )}
-                          {(order.status === "PENDING" ||
-                            order.status === "CONFIRMED") && (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleOrderAction(order._id, "CANCELLED")
-                              }
-                              className="text-red-600"
-                            >
-                              <XCircle className="mr-2 h-4 w-4" />
-                              Cancel Order
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem>
-                            <FileText className="mr-2 h-4 w-4" />
-                            Generate Invoice
-                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -792,31 +683,35 @@ export default function AdminOrdersPage() {
                           {selectedOrder.status}
                         </Badge>
                       </div>
-                      <div>
-                        <h4 className="font-semibold">Payment Status</h4>
-                        <Badge
-                          className={getPaymentStatusColor(
-                            selectedOrder.payment.status
-                          )}
-                        >
-                          {selectedOrder.payment.status}
-                        </Badge>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold">Payment Method</h4>
-                        <Badge
-                          className={getPaymentMethodColor(
-                            selectedOrder.payment.method
-                          )}
-                        >
-                          {selectedOrder.payment.method}
-                        </Badge>
-                      </div>
+                      {selectedOrder.payment && (
+                        <div>
+                          <h4 className="font-semibold">Payment Status</h4>
+                          <Badge
+                            className={getPaymentStatusColor(
+                              selectedOrder.payment.status
+                            )}
+                          >
+                            {selectedOrder.payment.status}
+                          </Badge>
+                        </div>
+                      )}
+                      {selectedOrder.payment && (
+                        <div>
+                          <h4 className="font-semibold">Payment Method</h4>
+                          <Badge
+                            className={getPaymentMethodColor(
+                              selectedOrder.payment.method
+                            )}
+                          >
+                            {selectedOrder.payment.method}
+                          </Badge>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-600">Total Amount</p>
                       <p className="text-2xl font-bold">
-                        ₹{selectedOrder.total.toFixed(2)}
+                        Rs .{selectedOrder.total.toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -852,55 +747,61 @@ export default function AdminOrdersPage() {
                   </div>
 
                   {/* Payment Information */}
-                  <div>
-                    <h4 className="font-semibold mb-3">Payment Information</h4>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>Total Amount:</span>
-                            <span>₹{selectedOrder.total.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Payment Amount:</span>
-                            <span>
-                              ₹{selectedOrder.payment.amount.toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center space-x-2">
-                            <CreditCard className="h-4 w-4 text-gray-400" />
-                            <span>Method: {selectedOrder.payment.method}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <DollarSign className="h-4 w-4 text-gray-400" />
-                            <span>
-                              Status: {selectedOrder?.payment?.status}
-                            </span>
-                          </div>
-                          {selectedOrder.payment.transaction_uuid && (
-                            <div className="flex items-center space-x-2">
-                              <FileText className="h-4 w-4 text-gray-400" />
+                  {selectedOrder.payment && (
+                    <div>
+                      <h4 className="font-semibold mb-3">
+                        Payment Information
+                      </h4>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>Total Amount:</span>
+                              <span>Rs .{selectedOrder.total.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Payment Amount:</span>
                               <span>
-                                Transaction:{" "}
-                                {selectedOrder.payment.transaction_uuid}
+                                Rs .{selectedOrder.payment.amount.toFixed(2)}
                               </span>
                             </div>
-                          )}
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                            <span>
-                              Order Date:{" "}
-                              {new Date(
-                                selectedOrder.createdAt
-                              ).toLocaleDateString()}
-                            </span>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center space-x-2">
+                              <CreditCard className="h-4 w-4 text-gray-400" />
+                              <span>
+                                Method: {selectedOrder.payment.method}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <DollarSign className="h-4 w-4 text-gray-400" />
+                              <span>
+                                Status: {selectedOrder?.payment?.status}
+                              </span>
+                            </div>
+                            {selectedOrder.payment.transaction_uuid && (
+                              <div className="flex items-center space-x-2">
+                                <FileText className="h-4 w-4 text-gray-400" />
+                                <span>
+                                  Transaction:{" "}
+                                  {selectedOrder.payment.transaction_uuid}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center space-x-2">
+                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <span>
+                                Order Date:{" "}
+                                {new Date(
+                                  selectedOrder.createdAt
+                                ).toLocaleDateString()}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="products" className="space-y-4">
@@ -930,16 +831,16 @@ export default function AdminOrdersPage() {
                               Quantity: {item.quantity}
                             </p>
                             <p className="text-sm text-gray-500">
-                              Unit Price: ₹{item.price.toFixed(2)}
+                              Unit Price: Rs .{item.price.toFixed(2)}
                             </p>
                             <p className="text-sm text-gray-500">
-                              Seller: {item.sellerId.username}
+                              Seller: {item.productId.sellerId.username}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">
-                            ₹{(item.price * item.quantity).toFixed(2)}
+                            Rs .{(item.price * item.quantity).toFixed(2)}
                           </p>
                           <p className="text-sm text-gray-500">
                             Stock: {item.productId.count}

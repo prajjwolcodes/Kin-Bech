@@ -62,11 +62,41 @@ const AdminSellerStatsPage = () => {
       }
     }
     fetchSellers();
-  }, []);
+  }, [token]);
 
   const totalRevenue = sellers.reduce((sum, s) => sum + s.totalRevenue, 0);
   const totalCommission = sellers.reduce((sum, s) => sum + s.commission, 0);
   const totalPayable = sellers.reduce((sum, s) => sum + s.payableAmount, 0);
+
+  async function paySeller(sellerId: string) {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/checkout/paytoseller/${sellerId}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to pay seller");
+      }
+
+      const data = await res.json();
+      console.log("Payment successful:", data);
+
+      // Update the seller's payableAmount in state
+      setSellers((prevSellers) =>
+        prevSellers.map((seller) =>
+          seller._id === sellerId ? { ...seller, payableAmount: 0 } : seller
+        )
+      );
+    } catch (err) {
+      console.error("Failed to pay seller", err);
+    }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -138,6 +168,11 @@ const AdminSellerStatsPage = () => {
                           View Details
                         </DropdownMenuItem>
                       </DialogTrigger>
+                      {seller.payableAmount > 0 && (
+                        <DropdownMenuItem onClick={() => paySeller(seller._id)}>
+                          Pay Now
+                        </DropdownMenuItem>
+                      )}
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Seller Details</DialogTitle>

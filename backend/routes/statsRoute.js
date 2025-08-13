@@ -1,6 +1,7 @@
 import express from "express";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import {
+  getAdminSellerStats,
   getPlatformStats,
   getRecentActivity,
   getSellerStats,
@@ -13,5 +14,6 @@ router.use(authMiddleware);
 router.route("/").get(getPlatformStats);
 router.route("/seller").get(getSellerStats);
 router.route("/recent-activity").get(getRecentActivity);
+router.route("/seller-stats-admin").get(getAdminSellerStats);
 
 export default router;

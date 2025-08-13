@@ -30,7 +30,10 @@ const subOrderSchema = new mongoose.Schema(
         price: { type: Number, required: true },
       },
     ],
-    subtotal: { type: Number, required: true }, // revenue for this seller before commission
+    subtotal: { type: Number, required: true },
+    payableAmount: { type: Number, required: true }, // amount to be paid to seller after commission
+    payoutStatus: { type: String, enum: ["PAID", "UNPAID"], default: "UNPAID" }, // UNPAID, PAID
+    payoutDate: { type: Date }, // e.g. 2025-W33 // revenue for this seller before commission
   },
   { timestamps: true }
 );

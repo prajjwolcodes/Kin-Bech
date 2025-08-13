@@ -35,8 +35,8 @@ export async function getSellerStats(req, res) {
       let totalOrders = 0;
       let completedOrders = 0;
       let totalRevenue = 0;
-      let payableAmount = 0;
       let commission = 0;
+      let payableAmount = 0;
 
       for (const order of orders) {
         for (const sub of order.subOrders || []) {
@@ -47,11 +47,11 @@ export async function getSellerStats(req, res) {
               completedOrders++;
               totalRevenue += sub.subtotal;
 
-              const sellerShare = sub.subtotal * 0.95;
               const adminCommission = sub.subtotal * 0.05;
-
-              payableAmount += sellerShare;
               commission += adminCommission;
+
+              // Only add the remaining payableAmount
+              payableAmount += sub.payableAmount;
             }
           }
         }

@@ -31,7 +31,9 @@ export async function checkoutController(req, res) {
         status: "UNPAID",
       });
       order.payment = payment;
-      order.subOrder.status = "CONFIRMED";
+      order.subOrders.map((subOrder) => {
+        subOrder.status = "CONFIRMED";
+      });
       order.status = "CONFIRMED";
       await order.save();
 
@@ -316,6 +318,9 @@ async function finalizeOrder(order, paymentStatus, method) {
   }
   existingOrder.status = "CONFIRMED";
   existingOrder.payment = payment;
+  existingOrder.subOrders.map((subOrder) => {
+    subOrder.status = "CONFIRMED";
+  });
   await existingOrder.save();
 
   await deductStock(existingOrder._id);

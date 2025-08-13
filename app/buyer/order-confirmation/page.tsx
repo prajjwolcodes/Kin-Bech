@@ -45,7 +45,7 @@ function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
   const { user, token } = useSelector((state: RootState) => state.auth);
-  const { currentOrder } = useSelector((state: RootState) => state.orders);
+  const { currentOrder } = useSelector((state: any) => state.orders);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -84,11 +84,6 @@ function OrderConfirmationContent() {
     }
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    router.push("/");
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "PENDING":
@@ -106,7 +101,7 @@ function OrderConfirmationContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-5rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading order details...</p>
@@ -117,7 +112,7 @@ function OrderConfirmationContent() {
 
   if (!currentOrder) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-5rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -137,68 +132,7 @@ function OrderConfirmationContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link
-              href="/buyer/dashboard"
-              className="flex items-center space-x-2"
-            >
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">K</span>
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                KinBech
-              </span>
-            </Link>
-
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4" />
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-8 w-8 rounded-full"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src="/placeholder-user.jpg"
-                        alt={user?.username}
-                      />
-                      <AvatarFallback>
-                        {user?.username?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {user?.username}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-[calc(100vh-5rem)] bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         {/* Success Message */}
         <div className="text-center mb-8">
@@ -235,7 +169,7 @@ function OrderConfirmationContent() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {currentOrder.items.map((item, index) => (
+                  {currentOrder.items.map((item: any, index: any) => (
                     <div
                       key={index}
                       className="flex items-center space-x-4 p-4 border rounded-lg"
@@ -253,12 +187,12 @@ function OrderConfirmationContent() {
                           Quantity: {item.quantity}
                         </p>
                         <p className="text-lg font-bold text-blue-600">
-                          ₹{item.price}
+                          Rs. {item.price}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">
-                          ₹{(item.price * item.quantity).toFixed(2)}
+                          Rs. {(item.price * item.quantity).toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -303,7 +237,7 @@ function OrderConfirmationContent() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span>Total</span>
-                  <span>₹{currentOrder.total.toFixed(2)}</span>
+                  <span>Rs. {currentOrder.total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Tax</span>
@@ -316,7 +250,7 @@ function OrderConfirmationContent() {
                 <Separator />
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
-                  <span>₹{currentOrder.total.toFixed(2)}</span>
+                  <span>Rs. {currentOrder.total.toFixed(2)}</span>
                 </div>
                 <div className="text-center">
                   <Badge variant="outline">

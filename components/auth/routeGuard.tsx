@@ -65,13 +65,13 @@ export function RouteGuard({
 
   // ✅ During SSR and hydration, render a stable placeholder
   if (!mounted) {
-    return <div className="min-h-screen bg-gray-50" />;
+    return <div className="min-h-[calc(100vh-5rem)] bg-gray-50" />;
   }
 
   // Show loading or redirecting indicators after mount
   if (requireAuth && !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-5rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Checking authentication...</p>
@@ -82,7 +82,7 @@ export function RouteGuard({
 
   if (!requireAuth && isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-5rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Redirecting...</p>
@@ -99,7 +99,7 @@ export function RouteGuard({
     !allowedRoles.includes(user.role)
   ) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-5rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Redirecting to your dashboard...</p>

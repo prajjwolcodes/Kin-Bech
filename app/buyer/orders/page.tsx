@@ -1,14 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import type { RootState } from "@/lib/store";
-import {
-  setOrders,
-  setLoading,
-  setError,
-} from "@/lib/features/orders/orderSlice";
-import { logout } from "@/lib/features/auth/authSlice";
+import { RouteGuard } from "@/components/auth/routeGuard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -26,31 +18,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { logout } from "@/lib/features/auth/authSlice";
 import {
-  Package,
-  Search,
-  Filter,
-  Eye,
-  ArrowLeft,
-  User,
-  Bell,
-  Settings,
-  LogOut,
-  TriangleAlert,
-} from "lucide-react";
+  setError,
+  setLoading,
+  setOrders,
+} from "@/lib/features/orders/orderSlice";
+import type { RootState } from "@/lib/store";
+import { Eye, Filter, Package, Search, TriangleAlert } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { RouteGuard } from "@/components/auth/routeGuard";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 // Mock orders data
 const mockOrders = [
@@ -124,7 +104,7 @@ function OrdersPageContent() {
   const dispatch = useDispatch();
   const router = useRouter();
   const { user, token } = useSelector((state: RootState) => state.auth);
-  const { orders, loading } = useSelector((state: RootState) => state.orders);
+  const { orders, loading } = useSelector((state: any) => state.orders);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -181,15 +161,17 @@ function OrdersPageContent() {
         return "bg-green-100 text-green-800";
       case "CANCELLED":
         return "bg-red-100 text-red-800";
+      case "COMPLETED":
+        return "bg-green-100 text-green-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  const filteredOrders = orders.filter((order) => {
+  const filteredOrders = orders.filter((order: any) => {
     const matchesSearch =
       order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.items.some((item) =>
+      order.items.some((item: any) =>
         item.productId.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     const matchesStatus =
@@ -199,7 +181,7 @@ function OrdersPageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-5rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your orders...</p>
@@ -209,89 +191,8 @@ function OrdersPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link
-              href="/buyer/dashboard"
-              className="flex items-center space-x-2"
-            >
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">K</span>
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                KinBech
-              </span>
-            </Link>
-
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4" />
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-8 w-8 rounded-full"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src="/placeholder-user.jpg"
-                        alt={user?.username}
-                      />
-                      <AvatarFallback>
-                        {user?.username?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {user?.username}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-[calc(100vh-5rem)] bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center space-x-2 mb-6">
-          <Link
-            href="/buyer/dashboard"
-            className="flex items-center text-blue-600 hover:text-blue-800"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Link>
-        </div>
-
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Orders</h1>
@@ -357,7 +258,7 @@ function OrdersPageContent() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {filteredOrders.map((order) => (
+            {filteredOrders.map((order: any) => (
               <Card
                 key={order._id}
                 className="hover:shadow-lg transition-shadow"
@@ -403,7 +304,7 @@ function OrdersPageContent() {
                   <div className="space-y-4">
                     {/* Order Items */}
                     <div className="space-y-3">
-                      {order.items.map((item, index) => (
+                      {order.items.map((item: any, index: any) => (
                         <div
                           key={index}
                           className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg"
@@ -425,7 +326,7 @@ function OrdersPageContent() {
                           </div>
                           <div className="text-right">
                             <p className="font-semibold">
-                              ₹{(item.price * item.quantity).toFixed(2)}
+                              Rs. {(item.price * item.quantity).toFixed(2)}
                             </p>
                           </div>
                         </div>
@@ -436,7 +337,7 @@ function OrdersPageContent() {
                     <div className="flex items-center justify-between pt-4 border-t">
                       <div className="text-right">
                         <p className="text-lg font-bold">
-                          Total: ₹{order.total.toFixed(2)}
+                          Total: Rs. {order.total.toFixed(2)}
                         </p>
                       </div>
                     </div>

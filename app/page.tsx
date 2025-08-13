@@ -1,50 +1,22 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ArrowRight, ShoppingBag, Store, Shield, Zap, Users } from "lucide-react"
-import Link from "next/link"
-import Image from "next/image"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowRight,
+  ShoppingBag,
+  Store,
+  Shield,
+  Zap,
+  Users,
+} from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">K</span>
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              KinBech
-            </span>
-          </div>
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">
-              Features
-            </Link>
-            <Link href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors">
-              How it Works
-            </Link>
-            <Link href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">
-              Pricing
-            </Link>
-          </nav>
-          <div className="flex items-center space-x-4">
-            <Link href="/auth/login">
-              <Button variant="ghost">Login</Button>
-            </Link>
-            <Link href="/auth/signup">
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <div className="px-4 md:px-8 lg:px-16">
       {/* Hero Section */}
-      <section className="py-20 px-4">
+      <section className="py-20">
         <div className="container mx-auto text-center">
           <Badge className="mb-6 bg-blue-100 text-blue-800 hover:bg-blue-100">
             🚀 Trusted by 10,000+ users worldwide
@@ -55,8 +27,8 @@ export default function LandingPage() {
             Marketplace
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Connect with buyers and sellers in a secure, modern platform. Start selling your products or discover
-            amazing deals today.
+            Connect with buyers and sellers in a secure, modern platform. Start
+            selling your products or discover amazing deals today.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link href="/auth/signup?role=buyer">
@@ -99,12 +71,13 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4 bg-white">
+      <section id="features" className="py-20 bg-white">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Why Choose KinBech?</h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Built with modern technology and designed for seamless user experience
+              Built with modern technology and designed for seamless user
+              experience
             </p>
           </div>
 
@@ -116,7 +89,8 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-2xl font-bold mb-4">Secure Transactions</h3>
                 <p className="text-gray-600">
-                  Advanced security measures protect every transaction with end-to-end encryption
+                  Advanced security measures protect every transaction with
+                  end-to-end encryption
                 </p>
               </CardContent>
             </Card>
@@ -127,7 +101,10 @@ export default function LandingPage() {
                   <Zap className="h-8 w-8 text-purple-600" />
                 </div>
                 <h3 className="text-2xl font-bold mb-4">Lightning Fast</h3>
-                <p className="text-gray-600">Optimized performance ensures quick loading and smooth user experience</p>
+                <p className="text-gray-600">
+                  Optimized performance ensures quick loading and smooth user
+                  experience
+                </p>
               </CardContent>
             </Card>
 
@@ -137,7 +114,10 @@ export default function LandingPage() {
                   <Users className="h-8 w-8 text-green-600" />
                 </div>
                 <h3 className="text-2xl font-bold mb-4">Community Driven</h3>
-                <p className="text-gray-600">Join thousands of satisfied buyers and sellers in our growing community</p>
+                <p className="text-gray-600">
+                  Join thousands of satisfied buyers and sellers in our growing
+                  community
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -145,7 +125,7 @@ export default function LandingPage() {
       </section>
 
       {/* How it Works */}
-      <section id="how-it-works" className="py-20 px-4 bg-gray-50">
+      <section id="how-it-works" className="py-20 bg-gray-50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">How KinBech Works</h2>
@@ -154,7 +134,9 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h3 className="text-3xl font-bold mb-8 text-blue-600">For Buyers</h3>
+              <h3 className="text-3xl font-bold mb-8 text-blue-600">
+                For Buyers
+              </h3>
               <div className="space-y-6">
                 <div className="flex items-start space-x-4">
                   <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
@@ -162,7 +144,9 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-lg">Browse Products</h4>
-                    <p className="text-gray-600">Discover amazing products from verified sellers</p>
+                    <p className="text-gray-600">
+                      Discover amazing products from verified sellers
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -171,7 +155,9 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-lg">Add to Cart</h4>
-                    <p className="text-gray-600">Select your favorite items and add them to cart</p>
+                    <p className="text-gray-600">
+                      Select your favorite items and add them to cart
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -180,14 +166,18 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-lg">Secure Checkout</h4>
-                    <p className="text-gray-600">Complete your purchase with secure payment options</p>
+                    <p className="text-gray-600">
+                      Complete your purchase with secure payment options
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div>
-              <h3 className="text-3xl font-bold mb-8 text-purple-600">For Sellers</h3>
+              <h3 className="text-3xl font-bold mb-8 text-purple-600">
+                For Sellers
+              </h3>
               <div className="space-y-6">
                 <div className="flex items-start space-x-4">
                   <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
@@ -195,7 +185,9 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-lg">Create Account</h4>
-                    <p className="text-gray-600">Sign up as a seller and verify your account</p>
+                    <p className="text-gray-600">
+                      Sign up as a seller and verify your account
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -204,7 +196,9 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-lg">List Products</h4>
-                    <p className="text-gray-600">Upload your products with detailed descriptions</p>
+                    <p className="text-gray-600">
+                      Upload your products with detailed descriptions
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -213,7 +207,9 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-lg">Start Earning</h4>
-                    <p className="text-gray-600">Receive orders and grow your business</p>
+                    <p className="text-gray-600">
+                      Receive orders and grow your business
+                    </p>
                   </div>
                 </div>
               </div>
@@ -223,7 +219,7 @@ export default function LandingPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             <div>
@@ -247,11 +243,12 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 bg-white">
+      <section className="py-20 bg-white">
         <div className="container mx-auto text-center">
           <h2 className="text-4xl font-bold mb-6">Ready to Get Started?</h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Join thousands of users who trust KinBech for their buying and selling needs
+            Join thousands of users who trust KinBech for their buying and
+            selling needs
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/signup?role=buyer">
@@ -263,7 +260,11 @@ export default function LandingPage() {
               </Button>
             </Link>
             <Link href="/auth/signup?role=seller">
-              <Button size="lg" variant="outline" className="text-lg px-8 py-4 border-2 bg-transparent">
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8 py-4 border-2 bg-transparent"
+              >
                 Start as Seller
               </Button>
             </Link>
@@ -272,7 +273,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 px-4">
+      <footer className="bg-gray-900 text-white py-12">
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
@@ -282,7 +283,9 @@ export default function LandingPage() {
                 </div>
                 <span className="text-2xl font-bold">KinBech</span>
               </div>
-              <p className="text-gray-400">Your trusted marketplace for buying and selling products online.</p>
+              <p className="text-gray-400">
+                Your trusted marketplace for buying and selling products online.
+              </p>
             </div>
             <div>
               <h4 className="font-bold mb-4">Company</h4>
@@ -351,5 +354,5 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

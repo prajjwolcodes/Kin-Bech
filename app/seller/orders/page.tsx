@@ -1,16 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import type { RootState } from "@/lib/store";
-import {
-  setSellerOrders,
-  updateOrderStatus,
-  setLoading,
-  setError,
-  updatePaymentStatus,
-} from "@/lib/features/orders/orderSlice";
-import { logout } from "@/lib/features/auth/authSlice";
+import { RouteGuard } from "@/components/auth/routeGuard";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,22 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -44,35 +20,51 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Search,
-  MoreHorizontal,
-  Eye,
-  Package,
-  Truck,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { logout } from "@/lib/features/auth/authSlice";
+import {
+  setError,
+  setLoading,
+  setSellerOrders,
+  updateOrderStatus,
+} from "@/lib/features/orders/orderSlice";
+import type { RootState } from "@/lib/store";
+import {
   CheckCircle,
-  XCircle,
-  ArrowLeft,
-  Bell,
-  Settings,
-  LogOut,
-  User,
-  Filter,
   Download,
+  Eye,
+  Filter,
   Loader2,
-  Pen,
+  MoreHorizontal,
+  Package,
+  Search,
+  Truck,
+  XCircle,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import { RouteGuard } from "@/components/auth/routeGuard";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 function SellerOrdersContent() {
   const dispatch = useDispatch();
@@ -222,77 +214,7 @@ function SellerOrdersContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo & Back */}
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/seller/dashboard"
-                className="flex items-center text-gray-600 hover:text-gray-900"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Link>
-              <div className="h-6 w-px bg-gray-300" />
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">K</span>
-                </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  KinBech
-                </span>
-                <Badge variant="secondary" className="ml-2">
-                  Seller
-                </Badge>
-              </div>
-            </div>
-
-            {/* Right Side */}
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4" />
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-8 w-8 rounded-full"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src="/placeholder-user.jpg"
-                        alt={user?.username}
-                      />
-                      <AvatarFallback>
-                        {user?.username?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-[calc(100vh-5rem)] bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
@@ -488,7 +410,7 @@ function SellerOrdersContent() {
                         </div>
                       </TableCell>
                       <TableCell className="font-semibold">
-                        ₹{order.subOrder.subtotal.toLocaleString()}
+                        Rs. {order.subOrder.subtotal?.toLocaleString()}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -541,7 +463,7 @@ function SellerOrdersContent() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {new Date(order.createdAt).toLocaleDateString()}
+                        {new Date(order.createdAt)?.toLocaleDateString()}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
@@ -701,7 +623,7 @@ function SellerOrdersContent() {
                 <div>
                   <h4 className="font-semibold mb-3">Products Ordered</h4>
                   <div className="space-y-3">
-                    {selectedOrder.orderItems.map((item: any) => (
+                    {selectedOrder.subOrder.items.map((item: any) => (
                       <div
                         key={item._id}
                         className="flex items-center justify-between p-3 border rounded-lg"
@@ -720,12 +642,12 @@ function SellerOrdersContent() {
                               Quantity: {item.quantity}
                             </p>
                             <p className="text-sm text-gray-500">
-                              Unit Price: ₹{item.price}
+                              Unit Price: Rs. {item.price}
                             </p>
                           </div>
                         </div>
                         <p className="font-semibold">
-                          ₹{(item.price * item.quantity).toLocaleString()}
+                          Rs. {(item.price * item.quantity)?.toLocaleString()}
                         </p>
                       </div>
                     ))}
@@ -755,8 +677,8 @@ function SellerOrdersContent() {
                         <strong>Status:</strong> {selectedOrder.payment.status}
                       </p>
                       <p>
-                        <strong>Amount:</strong> ₹
-                        {selectedOrder.payment.amount.toLocaleString()}
+                        <strong>Amount:</strong> Rs.
+                        {selectedOrder.subOrder.subtotal?.toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -765,15 +687,19 @@ function SellerOrdersContent() {
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <p>
                         <strong>Order Date:</strong>{" "}
-                        {new Date(selectedOrder.createdAt).toLocaleDateString()}
+                        {new Date(
+                          selectedOrder.createdAt
+                        )?.toLocaleDateString()}
                       </p>
                       <p>
                         <strong>Last Updated:</strong>{" "}
-                        {new Date(selectedOrder.updatedAt).toLocaleDateString()}
+                        {new Date(
+                          selectedOrder.updatedAt
+                        )?.toLocaleDateString()}
                       </p>
                       <p>
-                        <strong>Total:</strong> ₹
-                        {selectedOrder.total.toLocaleString()}
+                        <strong>Total:</strong> Rs.
+                        {selectedOrder.total?.toLocaleString()}
                       </p>
                     </div>
                   </div>

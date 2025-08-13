@@ -4,6 +4,10 @@ import {
   verifyPayment,
 } from "../controller/checkout/checkoutController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
+import {
+  getUnpaidSubOrders,
+  paySeller,
+} from "../controller/checkout/payToSeller.js";
 
 const router = express.Router();
 
@@ -11,6 +15,8 @@ router.use(authMiddleware); // Apply auth middleware to all routes in this route
 
 router.route("/:id").put(checkoutController);
 router.route("/verify").post(verifyPayment);
+router.route("/paytoseller/:sellerId").patch(paySeller);
+router.route("/paytoseller/unpaid").post(getUnpaidSubOrders);
 
 // router.post("/payment-status");
 

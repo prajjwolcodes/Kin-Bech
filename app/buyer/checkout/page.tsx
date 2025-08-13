@@ -1,11 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { useSearchParams } from "next/navigation";
-import type { RootState } from "@/lib/store";
-import { setCurrentOrder } from "@/lib/features/orders/orderSlice";
-import { logout } from "@/lib/features/auth/authSlice";
+import { RouteGuard } from "@/components/auth/routeGuard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,32 +15,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { logout } from "@/lib/features/auth/authSlice";
+import { setCurrentOrder } from "@/lib/features/orders/orderSlice";
+import type { RootState } from "@/lib/store";
 import {
-  ShoppingCart,
-  CreditCard,
-  Truck,
-  Shield,
-  ArrowLeft,
-  Bell,
-  LogOut,
   AlertCircle,
+  ArrowLeft,
   Clock,
+  CreditCard,
+  Shield,
+  ShoppingCart,
+  Truck,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { RouteGuard } from "@/components/auth/routeGuard";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 function CheckoutPageContent() {
   const dispatch = useDispatch();
@@ -51,7 +39,7 @@ function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
   const { user, token } = useSelector((state: RootState) => state.auth);
-  const { currentOrder } = useSelector((state: RootState) => state.orders);
+  const { currentOrder } = useSelector((state: any) => state.orders);
   const [loading, setLoading] = useState(false);
   const [orderLoading, setOrderLoading] = useState(true);
   const [error, setError] = useState("");
@@ -267,7 +255,7 @@ function CheckoutPageContent() {
 
   if (orderLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-5rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading order details...</p>
@@ -278,7 +266,7 @@ function CheckoutPageContent() {
 
   if (!currentOrder) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-5rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <ShoppingCart className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -298,65 +286,7 @@ function CheckoutPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/buyer/cart" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">K</span>
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                KinBech
-              </span>
-            </Link>
-
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4" />
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-8 w-8 rounded-full"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src="/placeholder-user.jpg"
-                        alt={user?.username}
-                      />
-                      <AvatarFallback>
-                        {user?.username?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {user?.username}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-[calc(100vh-5rem)] bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         {/* Timer Alert */}
         {timeRemaining < 20 && (
@@ -550,7 +480,7 @@ function CheckoutPageContent() {
                 {/* Order Items */}
                 <div className="space-y-3">
                   {currentOrder?.items && currentOrder.items.length > 0 ? (
-                    currentOrder.items.map((item, index) => (
+                    currentOrder.items.map((item: any, index: any) => (
                       <div
                         key={item._id || index}
                         className="flex items-center space-x-3"
@@ -571,7 +501,7 @@ function CheckoutPageContent() {
                           </p>
                         </div>
                         <p className="font-semibold">
-                          ₹{(item.price * item.quantity).toFixed(2)}
+                          Rs. {(item.price * item.quantity).toFixed(2)}
                         </p>
                       </div>
                     ))
@@ -589,7 +519,7 @@ function CheckoutPageContent() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
-                      <span>₹{(currentOrder.total / 1.1).toFixed(2)}</span>
+                      <span>Rs. {(currentOrder.total / 1.1).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Shipping</span>
@@ -602,7 +532,7 @@ function CheckoutPageContent() {
                     <Separator />
                     <div className="flex justify-between text-lg font-semibold">
                       <span>Total</span>
-                      <span>₹{currentOrder.total.toFixed(2)}</span>
+                      <span>Rs. {currentOrder.total.toFixed(2)}</span>
                     </div>
                   </div>
                 ) : (

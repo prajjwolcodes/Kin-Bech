@@ -201,11 +201,12 @@ export const getSellerStats = async (req, res) => {
     });
 
     // ----------------------------
-    // Fetch all orders with this seller’s subOrders
+    // Fetch all orders containing seller's subOrders
     // ----------------------------
     const orders = await Order.find({ "subOrders.sellerId": sellerId }).lean();
 
     let totalOrders = 0;
+    let completedOrders = 0;
     let totalRevenue = 0;
     let pendingOrders = 0;
 
@@ -216,13 +217,11 @@ export const getSellerStats = async (req, res) => {
       );
       if (!subOrder) continue;
 
-      totalOrders++; // ✅ count 1 order for this seller
+      totalOrders++; // Count order once per seller
 
-      if (
-        subOrder.status === "COMPLETED" &&
-        subOrder.paymentStatus === "PAID"
-      ) {
-        totalRevenue += subOrder.total;
+      if (subOrder.status === "COMPLETED") {
+        completedOrders++;
+        totalRevenue += subOrder.subtotal; // Use subtotal here
       }
 
       if (subOrder.status !== "COMPLETED") {
@@ -230,15 +229,12 @@ export const getSellerStats = async (req, res) => {
       }
     }
 
-    const sellerRevenue = totalRevenue * 0.95; // after 5% commission
-
     // ----------------------------
     // Monthly revenue (last 6 months)
     // ----------------------------
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
 
-    // Pull only orders in the last 6 months with this seller’s subOrders
     const monthlyData = await Order.aggregate([
       {
         $match: {
@@ -260,7 +256,7 @@ export const getSellerStats = async (req, res) => {
             year: { $year: "$createdAt" },
             month: { $month: "$createdAt" },
           },
-          revenue: { $sum: "$subOrders.total" },
+          revenue: { $sum: "$subOrders.subtotal" },
         },
       },
       { $sort: { "_id.year": 1, "_id.month": 1 } },
@@ -276,9 +272,11 @@ export const getSellerStats = async (req, res) => {
       const found = monthlyData.find(
         (m) => m._id.year === year && m._id.month === month
       );
+      const monthlyRevenue = found ? found.revenue : 0;
+
       revenueData.push({
         month: monthNames[month - 1],
-        revenue: found ? found.revenue * 0.95 : 0,
+        revenue: monthlyRevenue * 0.95, // after 5% commission deduction
       });
     }
 
@@ -300,8 +298,9 @@ export const getSellerStats = async (req, res) => {
     res.json({
       stats: {
         totalProducts,
-        totalOrders, // ✅ one per seller subOrder
-        totalRevenue: sellerRevenue,
+        totalOrders,
+        completedOrders,
+        totalRevenue, // before commission deduction
         monthlyGrowth: monthlyGrowth.toFixed(2),
         pendingOrders,
         lowStockProducts,
@@ -372,5 +371,64 @@ export const getRecentActivity = async (req, res) => {
   } catch (error) {
     console.error("Error fetching recent activity:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getAdminSellerStats = async (req, res) => {
+  try {
+    const sellers = await User.find({ role: "seller" });
+
+    const stats = await Promise.all(
+      sellers.map(async (seller) => {
+        const completedOrders = await Order.aggregate([
+          { $unwind: "$subOrders" },
+          {
+            $match: {
+              "subOrders.sellerId": seller._id,
+              "subOrders.status": "COMPLETED",
+            },
+          },
+          {
+            $group: {
+              _id: "$subOrders.sellerId",
+              totalOrders: { $sum: 1 },
+              revenue: { $sum: "$subOrders.subtotal" },
+              commission: { $sum: "$subOrders.commission" },
+              payableAmount: {
+                $sum: {
+                  $cond: [
+                    { $eq: ["$subOrders.paymentStatus", "UNPAID"] },
+                    "$subOrders.payableAmount",
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+        ]);
+
+        const s = stats[0] || {
+          totalOrders: 0,
+          revenue: 0,
+          commission: 0,
+          payableAmount: 0,
+        };
+
+        return {
+          _id: seller._id,
+          username: seller.username,
+          email: seller.email,
+          totalOrders: s.totalOrders,
+          completedOrders: s.totalOrders, // same as totalOrders for completed status
+          totalRevenue: s.revenue,
+          commission: s.commission,
+          payableAmount: s.payableAmount,
+        };
+      })
+    );
+
+    res.json({ sellers: stats });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

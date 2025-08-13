@@ -1,10 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import type { RootState } from "@/lib/store";
-import { logout } from "@/lib/features/auth/authSlice";
-import { Button } from "@/components/ui/button";
+import { RouteGuard } from "@/components/auth/routeGuard";
 import {
   Card,
   CardContent,
@@ -12,70 +8,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
+import { logout } from "@/lib/features/auth/authSlice";
+import type { RootState } from "@/lib/store";
+import { DollarSign, Package, ShoppingCart, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  LineChart,
-  Line,
-  AreaChart,
   Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
+  AreaChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
 } from "recharts";
-import {
-  Users,
-  ShoppingCart,
-  DollarSign,
-  Package,
-  TrendingUp,
-  MoreHorizontal,
-  Search,
-  Filter,
-  Download,
-  Bell,
-  Settings,
-  LogOut,
-  User,
-  Shield,
-  Eye,
-  Ban,
-  Store,
-  Activity,
-} from "lucide-react";
-import { RouteGuard } from "@/components/auth/routeGuard";
-import { useRouter } from "next/navigation";
 
 // Mock data for admin dashboard
 const mockUsers = [
@@ -161,19 +111,19 @@ const categoryData = [
 const mockRecentActivity = [
   {
     type: "payment",
-    message: "User reported issue: Payment of ₹420.00 failed",
+    message: "User reported issue: Payment of Rs. 420.00 failed",
     time: "2025-08-05T02:17:28.780Z",
     color: "yellow",
   },
   {
     type: "payment",
-    message: "User reported issue: Payment of ₹200.00 failed",
+    message: "User reported issue: Payment of Rs. 200.00 failed",
     time: "2025-08-05T01:41:52.480Z",
     color: "yellow",
   },
   {
     type: "order",
-    message: "Large order completed: ₹1200.00",
+    message: "Large order completed: Rs. 1200.00",
     time: "2025-08-04T13:19:52.389Z",
     color: "blue",
   },
@@ -297,67 +247,7 @@ function AdminDashboardContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-red-600 to-pink-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">K</span>
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
-                KinBech
-              </span>
-              <Badge variant="destructive" className="ml-2">
-                Admin
-              </Badge>
-            </div>
-
-            {/* Right Side */}
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4" />
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-8 w-8 rounded-full"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src="/placeholder-admin.jpg"
-                        alt={user?.username}
-                      />
-                      <AvatarFallback>
-                        <Shield className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Admin Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Platform Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-[calc(100vh-5rem)] bg-gray-50">
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
@@ -370,626 +260,185 @@ function AdminDashboardContent() {
           </p>
         </div>
 
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="space-y-6"
-        >
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">User Management</TabsTrigger>
-            <TabsTrigger value="orders">Order Management</TabsTrigger>
-            <TabsTrigger value="analytics">Platform Analytics</TabsTrigger>
-          </TabsList>
+        {/* Overview Tab */}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {platformAnalytics.totalUsers.toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                +{platformAnalytics.newUsersThisMonth} this month
+              </p>
+            </CardContent>
+          </Card>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Users
-                  </CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {platformAnalytics.totalUsers.toLocaleString()}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    +{platformAnalytics.newUsersThisMonth} this month
-                  </p>
-                </CardContent>
-              </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Orders
+              </CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold flex gap-2">
+                {platformAnalytics.totalOrders.toLocaleString()}
+                <span className="text-gray-600 ">
+                  ({platformAnalytics.completedOrders.toLocaleString()}{" "}
+                  completed)
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {platformAnalytics.orderGrowth >= 0 ? "+ %" : ""}
+                {platformAnalytics.orderGrowth} from last month
+              </p>
+            </CardContent>
+          </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Orders
-                  </CardTitle>
-                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold flex gap-2">
-                    {platformAnalytics.totalOrders.toLocaleString()}
-                    <span className="text-gray-600 ">
-                      ({platformAnalytics.completedOrders.toLocaleString()}{" "}
-                      completed)
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {platformAnalytics.orderGrowth >= 0 ? "+ %" : ""}
-                    {platformAnalytics.orderGrowth} from last month
-                  </p>
-                </CardContent>
-              </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Platform Revenue
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                Rs. {platformAnalytics.totalRevenue.toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {platformAnalytics.revenueGrowth >= 0 ? "+ %" : ""}
+                {platformAnalytics.revenueGrowth} from last month
+              </p>
+            </CardContent>
+          </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Platform Revenue
-                  </CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    ₹{platformAnalytics.totalRevenue.toLocaleString()}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {platformAnalytics.revenueGrowth >= 0 ? "+ %" : ""}
-                    {platformAnalytics.revenueGrowth} from last month
-                  </p>
-                </CardContent>
-              </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Commission Earned
+              </CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                Rs. {platformAnalytics.platformCommission.toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                5% commission rate
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Commission Earned
-                  </CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    ₹{platformAnalytics.platformCommission.toLocaleString()}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    5% commission rate
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Platform Revenue Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Platform Revenue & Commission</CardTitle>
+              <CardDescription>
+                Monthly revenue and commission trends
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#3B82F6"
+                    strokeWidth={3}
+                    name="Total Revenue"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="commission"
+                    stroke="#10B981"
+                    strokeWidth={3}
+                    name="Commission"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Platform Revenue Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Platform Revenue & Commission</CardTitle>
-                  <CardDescription>
-                    Monthly revenue and commission trends
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={revenueData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="revenue"
-                        stroke="#3B82F6"
-                        strokeWidth={3}
-                        name="Total Revenue"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="commission"
-                        stroke="#10B981"
-                        strokeWidth={3}
-                        name="Commission"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+          {/* User Growth */}
+          <Card>
+            <CardHeader>
+              <CardTitle>User Growth</CardTitle>
+              <CardDescription>
+                New buyers and sellers joining the platform
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={userGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="buyers"
+                    stackId="1"
+                    stroke="#3B82F6"
+                    fill="#3B82F6"
+                    name="Buyers"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="sellers"
+                    stackId="1"
+                    stroke="#8B5CF6"
+                    fill="#8B5CF6"
+                    name="Sellers"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
 
-              {/* User Growth */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>User Growth</CardTitle>
-                  <CardDescription>
-                    New buyers and sellers joining the platform
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={userGrowthData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Area
-                        type="monotone"
-                        dataKey="buyers"
-                        stackId="1"
-                        stroke="#3B82F6"
-                        fill="#3B82F6"
-                        name="Buyers"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="sellers"
-                        stackId="1"
-                        stroke="#8B5CF6"
-                        fill="#8B5CF6"
-                        name="Sellers"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Platform Activity</CardTitle>
-                <CardDescription>
-                  Latest user registrations and orders
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentActivity.map((activity, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex items-center space-x-4 p-3 rounded-lg bg-${activity.color}-50`}
-                    >
-                      <div
-                        className={`w-2 h-2 rounded-full bg-${activity.color}-500`}
-                      ></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          {activity.message}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(activity.time).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Users Tab */}
-          <TabsContent value="users" className="space-y-6">
-            {/* User Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">
-                      {platformAnalytics.totalBuyers}
-                    </p>
-                    <p className="text-sm text-gray-600">Total Buyers</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-purple-600">
-                      {platformAnalytics.totalSellers}
-                    </p>
-                    <p className="text-sm text-gray-600">Total Sellers</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">
-                      {platformAnalytics.activeUsers}
-                    </p>
-                    <p className="text-sm text-gray-600">Active Users</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-yellow-600">0</p>
-                    <p className="text-sm text-gray-600">Pending Approval</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* User Filters */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Filter className="mr-2 h-5 w-5" />
-                  User Filters
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col md:flex-row gap-4">
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Platform Activity</CardTitle>
+            <CardDescription>
+              Latest user registrations and orders
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentActivity.map((activity, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-center space-x-4 p-3 rounded-lg bg-${activity.color}-50`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full bg-${activity.color}-500`}
+                  ></div>
                   <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        placeholder="Search users..."
-                        className="pl-10"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
+                    <p className="text-sm font-medium">{activity.message}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(activity.time).toLocaleString()}
+                    </p>
                   </div>
-                  <Select value={userFilter} onValueChange={setUserFilter}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue placeholder="Filter users" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Users</SelectItem>
-                      <SelectItem value="buyer">Buyers</SelectItem>
-                      <SelectItem value="seller">Sellers</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Users Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>User Management ({filteredUsers.length})</CardTitle>
-                <CardDescription>
-                  Manage all platform users and their accounts
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Join Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map((user) => (
-                      <TableRow key={user._id}>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback>
-                                {user.username.charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-medium">{user.username}</p>
-                              <p className="text-sm text-gray-500">
-                                {user.email}
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getRoleColor(user.role)}>
-                            {user.role.charAt(0).toUpperCase() +
-                              user.role.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Profile
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">
-                                <Ban className="mr-2 h-4 w-4" />
-                                Suspend User
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Orders Tab */}
-          <TabsContent value="orders" className="space-y-6">
-            {/* Order Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">
-                      {mockAllOrders.length}
-                    </p>
-                    <p className="text-sm text-gray-600">Total Orders</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-yellow-600">
-                      {
-                        mockAllOrders.filter((o) => o.status === "PENDING")
-                          .length
-                      }
-                    </p>
-                    <p className="text-sm text-gray-600">Pending</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">0</p>
-                    <p className="text-sm text-gray-600">Shipped</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">
-                      {
-                        mockAllOrders.filter((o) => o.status === "DELIVERED")
-                          .length
-                      }
-                    </p>
-                    <p className="text-sm text-gray-600">Delivered</p>
-                  </div>
-                </CardContent>
-              </Card>
+              ))}
             </div>
-
-            {/* Order Filters */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Filter className="mr-2 h-5 w-5" />
-                  Order Filters
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        placeholder="Search orders..."
-                        className="pl-10"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <Select value={orderFilter} onValueChange={setOrderFilter}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue placeholder="Filter orders" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Orders</SelectItem>
-                      <SelectItem value="PENDING">Pending</SelectItem>
-                      <SelectItem value="DELIVERED">Delivered</SelectItem>
-                      <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Orders Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  Order Management ({filteredOrders.length})
-                </CardTitle>
-                <CardDescription>
-                  Monitor and manage all platform orders
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order ID</TableHead>
-                      <TableHead>Buyer</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredOrders.map((order) => (
-                      <TableRow key={order._id}>
-                        <TableCell className="font-medium">
-                          {order._id}
-                        </TableCell>
-                        <TableCell>{order.buyerId.username}</TableCell>
-                        <TableCell className="font-semibold">
-                          ₹{order.total}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(order.status)}>
-                            {order.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Activity className="mr-2 h-4 w-4" />
-                                Track Order
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Category Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sales by Category</CardTitle>
-                  <CardDescription>
-                    Platform-wide category performance
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={categoryData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={120}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {categoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Monthly Orders */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Monthly Order Volume</CardTitle>
-                  <CardDescription>
-                    Total orders processed each month
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={revenueData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="orders" fill="#3B82F6" name="Orders" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Platform Insights */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Platform Insights</CardTitle>
-                <CardDescription>
-                  Key metrics and recommendations for platform growth
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-semibold text-green-800">
-                        Strong Platform Growth
-                      </h4>
-                      <p className="text-sm text-green-700">
-                        Platform revenue has grown by 15% this month.
-                        Electronics category is leading with 40% of total sales.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg">
-                    <Users className="h-5 w-5 text-blue-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-semibold text-blue-800">
-                        User Acquisition Success
-                      </h4>
-                      <p className="text-sm text-blue-700">
-                        156 new users joined this month, with a healthy 7:1
-                        buyer to seller ratio. Consider seller incentive
-                        programs.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3 p-4 bg-purple-50 rounded-lg">
-                    <Store className="h-5 w-5 text-purple-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-semibold text-purple-800">
-                        Commission Optimization
-                      </h4>
-                      <p className="text-sm text-purple-700">
-                        Current 10% commission rate is generating ₹
-                        {platformAnalytics.platformCommission.toLocaleString()}{" "}
-                        monthly. Consider tiered commission structure for
-                        high-volume sellers.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

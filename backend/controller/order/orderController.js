@@ -47,7 +47,6 @@ export async function createOrder(req, res) {
       }
 
       // Decrease stock
-      product.count -= item.quantity;
       await product.save({ session });
 
       const subTotal = product.price * item.quantity;
@@ -80,6 +79,8 @@ export async function createOrder(req, res) {
         status: "PENDING",
         subtotal: total,
         paymentStatus: "UNPAID",
+        payoutStatus: "UNPAID",
+        payableAmount: total * 0.95, // 95% to seller
         items: items.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
@@ -196,7 +197,12 @@ export async function getAllOrders(req, res) {
     const orders = await Order.find()
       .sort({ createdAt: -1 })
       .lean()
-      .populate("payment", "method status")
+      .populate("payment", "method status amount")
+      .populate(
+        "subOrders.items.productId",
+        "name description imageUrl count categoryId"
+      )
+      .populate("subOrders.sellerId", "username")
       .populate("buyerId");
 
     const orderIds = orders.map((o) => o._id);
@@ -240,6 +246,7 @@ export async function getSellerOrders(req, res) {
     const orders = await Order.find({ "subOrders.sellerId": sellerId })
       .sort({ createdAt: -1 })
       .populate("buyerId", "username email")
+      .populate("payment", "method status amount")
       .populate({
         path: "subOrders.items",
         populate: {
