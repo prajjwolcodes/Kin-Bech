@@ -339,12 +339,6 @@ export default function AdminOrdersPage() {
               Monitor and manage all platform orders
             </p>
           </div>
-          <div className="flex items-center space-x-4">
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export Orders
-            </Button>
-          </div>
         </div>
 
         {/* Stats Cards */}
@@ -514,7 +508,7 @@ export default function AdminOrdersPage() {
                           >
                             <Avatar className="h-8 w-8">
                               <AvatarImage
-                                src={`/placeholder.svg?height=32&width=32&text=${seller?.username
+                                src={`/placeholder.svg${seller?.username
                                   ?.charAt(0)
                                   .toUpperCase()}`}
                                 alt={seller?.username}

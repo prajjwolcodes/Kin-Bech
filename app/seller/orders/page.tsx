@@ -194,11 +194,6 @@ function SellerOrdersContent() {
     setIsOrderDetailOpen(true);
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    router.push("/");
-  };
-
   const orderStats = {
     total: sellerOrders.length,
     pending: sellerOrders.filter((o) => o.status === "PENDING").length,
@@ -222,14 +217,7 @@ function SellerOrdersContent() {
             <h1 className="text-3xl font-bold text-gray-900">
               Order Management
             </h1>
-            <p className="text-gray-600">
-              Monitor and manage all your customer orders
-            </p>
           </div>
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export Orders
-          </Button>
         </div>
 
         {/* Stats Cards */}

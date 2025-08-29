@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { useSearchParams } from "next/navigation";
-import type { RootState } from "@/lib/store";
-import { setCurrentOrder } from "@/lib/features/orders/orderSlice";
-import { logout } from "@/lib/features/auth/authSlice";
+import { RouteGuard } from "@/components/auth/routeGuard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,30 +10,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  CheckCircle,
-  Package,
-  Truck,
-  Bell,
-  LogOut,
-  Download,
-  Share,
-} from "lucide-react";
+import { setCurrentOrder } from "@/lib/features/orders/orderSlice";
+import type { RootState } from "@/lib/store";
+import { CheckCircle, Download, Package, Share, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { RouteGuard } from "@/components/auth/routeGuard";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 function OrderConfirmationContent() {
   const dispatch = useDispatch();
@@ -156,7 +137,12 @@ function OrderConfirmationContent() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Order #{currentOrder._id}</CardTitle>
+                    <CardTitle>
+                      Order{" "}
+                      <span className="text-xl text-gray-500">
+                        #{currentOrder._id}
+                      </span>
+                    </CardTitle>
                     <CardDescription>
                       Placed on{" "}
                       {new Date(currentOrder.createdAt).toLocaleDateString()}
@@ -182,10 +168,14 @@ function OrderConfirmationContent() {
                         className="rounded-lg object-cover"
                       />
                       <div className="flex-1">
-                        <h3 className="font-semibold">{item.productId.name}</h3>
-                        <p className="text-sm text-gray-500">
-                          Quantity: {item.quantity}
-                        </p>
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-semibold">
+                            {item.productId.name}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Quantity: {item.quantity}
+                          </p>
+                        </div>
                         <p className="text-lg font-bold text-blue-600">
                           Rs. {item.price}
                         </p>
@@ -200,31 +190,6 @@ function OrderConfirmationContent() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Shipping Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Truck className="mr-2 h-5 w-5" />
-                  Shipping Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p>
-                    <strong>Address:</strong>{" "}
-                    {currentOrder.shippingInfo?.address}
-                  </p>
-                  <p>
-                    <strong>City:</strong> {currentOrder.shippingInfo?.city}
-                  </p>
-
-                  <p>
-                    <strong>Phone:</strong> {currentOrder.shippingInfo?.phone}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Order Summary & Actions */}
@@ -234,72 +199,62 @@ function OrderConfirmationContent() {
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span>Total</span>
                   <span>Rs. {currentOrder.total.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Tax</span>
-                  <span>0.00</span>
-                </div>
+
                 <div className="flex justify-between">
                   <span>Shipping</span>
                   <span className="text-green-600">Free</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Address:</span>{" "}
+                  <span>{currentOrder.shippingInfo?.address}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>City:</span>{" "}
+                  <span>{currentOrder.shippingInfo?.city}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Phone:</span>{" "}
+                  <span>{currentOrder.shippingInfo?.phone}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between">
+                  <span>Payment Method:</span> {currentOrder.payment.method}
                 </div>
                 <Separator />
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
                   <span>Rs. {currentOrder.total.toFixed(2)}</span>
                 </div>
-                <div className="text-center">
-                  <Badge variant="outline">
-                    Payment Method: {currentOrder.payment.method}
-                  </Badge>
-                </div>
               </CardContent>
             </Card>
 
-            {/* Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Order Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Link href="/buyer/orders">
-                  <Button className="w-full bg-transparent" variant="outline">
-                    <Package className="mr-2 h-4 w-4" />
-                    View All Orders
-                  </Button>
-                </Link>
-                <Button className="w-full bg-transparent" variant="outline">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Invoice
-                </Button>
-                <Button className="w-full bg-transparent" variant="outline">
-                  <Share className="mr-2 h-4 w-4" />
-                  Share Order
-                </Button>
-                <Link href="/buyer/dashboard">
-                  <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                    Continue Shopping
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+            <Link href="/buyer/dashboard">
+              <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                Continue Shopping
+              </Button>
+            </Link>
 
             {/* Estimated Delivery */}
             <Card>
               <CardHeader>
-                <CardTitle>Estimated Delivery</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600 mb-2">
+                <CardTitle className="flex justify-between items-center">
+                  Estimated Delivery{" "}
+                  <div className="text-2xl font-bold text-blue-600 ">
                     {new Date(
                       Date.now() + 3 * 24 * 60 * 60 * 1000
                     ).toLocaleDateString()}
                   </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center">
                   <p className="text-sm text-gray-500">
                     Your order will be delivered within 3-5 business days
                   </p>

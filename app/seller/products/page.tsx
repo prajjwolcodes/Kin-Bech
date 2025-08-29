@@ -1,18 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import type { RootState } from "@/lib/store";
-import {
-  setSellerProducts,
-  addProduct,
-  updateProduct,
-  deleteProduct,
-  setCategories,
-  setLoading,
-  setError,
-} from "@/lib/features/products/productSlice";
-import { logout } from "@/lib/features/auth/authSlice";
+import { RouteGuard } from "@/components/auth/routeGuard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,8 +11,30 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -31,57 +43,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { logout } from "@/lib/features/auth/authSlice";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+  addProduct,
+  deleteProduct,
+  setCategories,
+  setError,
+  setLoading,
+  setSellerProducts,
+  updateProduct,
+} from "@/lib/features/products/productSlice";
+import type { RootState } from "@/lib/store";
 import {
+  Edit,
+  Eye,
+  Filter,
+  Loader2,
+  MoreHorizontal,
+  Package,
   Plus,
   Search,
-  MoreHorizontal,
-  Edit,
   Trash2,
-  Eye,
-  Package,
-  ArrowLeft,
-  Bell,
-  Settings,
-  LogOut,
-  User,
-  Filter,
-  Download,
-  TrendingUp,
-  TrendingDown,
-  Loader2,
-  X,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import { RouteGuard } from "@/components/auth/routeGuard";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 interface ProductFormData {
   name: string;
@@ -107,6 +95,8 @@ function SellerProductsContent() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState({ name: "" });
   const [newProduct, setNewProduct] = useState<ProductFormData>({
     name: "",
     description: "",
@@ -123,6 +113,38 @@ function SellerProductsContent() {
     }
   }, [user, token]);
 
+  const handleAddCategory = async () => {
+    setFormError("");
+    setFormLoading(true);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/category`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newCategory),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to add category");
+      }
+
+      const data = await response.json();
+      dispatch(setCategories([...categories, data.newCategory]));
+      setNewCategory({ name: "" });
+    } catch (error) {
+      console.error("Error adding category:", error);
+      setFormError("Failed to add category");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   const fetchSellerProducts = async () => {
     dispatch(setLoading(true));
     try {
@@ -136,7 +158,6 @@ function SellerProductsContent() {
         }
       );
 
-      console.log(response);
       if (!response.ok) {
         throw new Error("Failed to fetch seller products");
       }
@@ -362,11 +383,6 @@ function SellerProductsContent() {
     setFormError("");
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    router.push("/");
-  };
-
   const productStats = {
     total: sellerProducts.length,
     active: sellerProducts.filter((p) => p.count > 0).length,
@@ -388,10 +404,6 @@ function SellerProductsContent() {
             </p>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
             <Dialog
               open={isAddProductOpen}
               onOpenChange={(open) => {
@@ -417,18 +429,6 @@ function SellerProductsContent() {
                       ? "Update your product information"
                       : "Create a new product listing for your store"}
                   </DialogDescription>
-                  {/* <DialogClose asChild>
-                    <button
-                      onClick={() => {
-                        setIsAddProductOpen(false);
-                        resetForm();
-                      }}
-                      className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background 
-                   transition-opacity hover:opacity-100 focus:outline-none"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </DialogClose> */}
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   {formError && (
@@ -467,24 +467,58 @@ function SellerProductsContent() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="category">Category</Label>
-                    <Select
-                      value={newProduct.categoryId}
-                      onValueChange={(value) =>
-                        setNewProduct({ ...newProduct, categoryId: value })
-                      }
-                      disabled={formLoading}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category._id} value={category._id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-4">
+                      <Select
+                        value={newProduct.categoryId}
+                        onValueChange={(value) =>
+                          setNewProduct({ ...newProduct, categoryId: value })
+                        }
+                        disabled={formLoading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category._id} value={category._id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsAddCategoryOpen(true)}
+                      >
+                        Add Category
+                      </Button>
+                    </div>
+                    {isAddCategoryOpen && (
+                      <div className="flex gap-4">
+                        <Input
+                          id="categoryName"
+                          value={newCategory.name}
+                          onChange={(e) =>
+                            setNewCategory({
+                              ...newCategory,
+                              name: e.target.value,
+                            })
+                          }
+                          placeholder="Enter category name"
+                          disabled={formLoading}
+                        />
+                        <Button
+                          className="px-4"
+                          onClick={() => {
+                            handleAddCategory();
+                            setIsAddCategoryOpen(false);
+                          }}
+                          disabled={formLoading}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">

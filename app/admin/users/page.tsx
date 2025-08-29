@@ -87,9 +87,7 @@ export default function AdminUsersPage() {
         // Transform backend data to include display properties
         const transformedUsers = data.users.map((user: BackendUser) => ({
           ...user,
-          avatar: `/placeholder.svg?height=40&width=40&text=${user.username
-            .charAt(0)
-            .toUpperCase()}`,
+          avatar: `/${user.username.charAt(0).toUpperCase()}`,
           stats: {
             totalOrders: 0,
             totalSpent: 0,
@@ -161,12 +159,6 @@ export default function AdminUsersPage() {
             <p className="text-gray-600">
               Manage all platform users, sellers, and buyers
             </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export Users
-            </Button>
           </div>
         </div>
 
@@ -274,7 +266,7 @@ export default function AdminUsersPage() {
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-10 w-10">
                           <AvatarImage
-                            src={user.avatar || "/placeholder.svg"}
+                            src={user.avatar || "ls.svg"}
                             alt={user.username}
                           />
                           <AvatarFallback>

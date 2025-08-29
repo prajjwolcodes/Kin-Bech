@@ -1,14 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import type { RootState } from "@/lib/store";
-import {
-  removeFromCart,
-  updateQuantity,
-  clearCart,
-} from "@/lib/features/cart/cartSlice";
-import { logout } from "@/lib/features/auth/authSlice";
+import { RouteGuard } from "@/components/auth/routeGuard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,33 +11,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { logout } from "@/lib/features/auth/authSlice";
 import {
-  ShoppingCart,
-  Minus,
-  Plus,
-  Trash2,
-  ArrowLeft,
-  User,
-  Bell,
-  Settings,
-  LogOut,
-} from "lucide-react";
+  clearCart,
+  removeFromCart,
+  updateQuantity,
+} from "@/lib/features/cart/cartSlice";
+import type { RootState } from "@/lib/store";
+import { ArrowLeft, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { RouteGuard } from "@/components/auth/routeGuard";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 function CartPageContent() {
   const dispatch = useDispatch();
@@ -214,13 +195,10 @@ function CartPageContent() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center">
+                    <CardTitle className="flex text-xl items-center">
                       <ShoppingCart className="mr-2 h-5 w-5" />
                       Shopping Cart ({itemCount} items)
                     </CardTitle>
-                    <CardDescription>
-                      Review your items before placing order
-                    </CardDescription>
                   </div>
                   {items.length > 0 && (
                     <Button
@@ -308,7 +286,7 @@ function CartPageContent() {
                             <Plus className="h-4 w-4" />
                           </Button>
                         </div>
-                        <div className="text-right">
+                        <div className="flex items-center justify-between">
                           <p className="font-semibold">
                             Rs. {(item.price * item.quantity).toFixed(2)}
                           </p>
@@ -365,7 +343,7 @@ function CartPageContent() {
                 </Button>
                 <div className="text-center">
                   <Badge variant="secondary" className="text-xs">
-                    Secure checkout with SSL encryption
+                    COD, Esewa and Khalti payment available
                   </Badge>
                 </div>
               </CardContent>

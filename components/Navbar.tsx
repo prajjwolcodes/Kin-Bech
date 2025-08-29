@@ -112,13 +112,18 @@ const Navbar = () => {
 
           {isAuthenticated && pathname !== "/" && user?.role === "buyer" && (
             <div className="relative flex-1 max-w-2xl">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search products..."
-                className="pl-10 pr-4 py-2 w-full"
-                value={searchQuery}
-                onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-              />
+              {pathname === "/buyer/dashboard" && (
+                <>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+
+                  <Input
+                    placeholder="Search products..."
+                    className="pl-10 pr-4 py-2 w-full"
+                    value={searchQuery}
+                    onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+                  />
+                </>
+              )}
             </div>
           )}
 
@@ -305,11 +310,13 @@ const Navbar = () => {
 
             {isAuthenticated && pathname !== "/" && user?.role === "buyer" && (
               <>
-                <Input
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-                />
+                {pathname === "/buyer/dashboard" && (
+                  <Input
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+                  />
+                )}
                 <Link href="/buyer/cart">Cart</Link>
                 <Link href="/buyer/orders">My Orders</Link>
                 <Link href="#">Wishlist</Link>

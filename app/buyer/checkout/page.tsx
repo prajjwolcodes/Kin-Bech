@@ -518,17 +518,10 @@ function CheckoutPageContent() {
                 {currentOrder?.total ? (
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span>Subtotal</span>
-                      <span>Rs. {(currentOrder.total / 1.1).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
                       <span>Shipping</span>
                       <span className="text-green-600">Free</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Tax (10%)</span>
-                      <span>0.00</span>
-                    </div>
+
                     <Separator />
                     <div className="flex justify-between text-lg font-semibold">
                       <span>Total</span>

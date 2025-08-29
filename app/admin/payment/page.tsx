@@ -41,7 +41,7 @@ interface Seller {
 const AdminSellerStatsPage = () => {
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
-  const { token } = useSelector((state: RootState) => state.auth);
+  const { user, token } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     async function fetchSellers() {
