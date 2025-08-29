@@ -346,6 +346,7 @@ function SellerOrdersContent() {
                     <TableHead>Total</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Payment</TableHead>
+                    <TableHead>Payment Method</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -450,6 +451,7 @@ function SellerOrdersContent() {
                           </DropdownMenu> */}
                         </div>
                       </TableCell>
+                      <TableCell>{order?.payment?.method || "N/A"}</TableCell>
                       <TableCell>
                         {new Date(order.createdAt)?.toLocaleDateString()}
                       </TableCell>
