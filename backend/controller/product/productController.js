@@ -47,10 +47,13 @@ export async function getAllProducts(req, res) {
   try {
     const products = await Product.find()
       .populate("categoryId")
-      .populate("sellerId");
-    return res
-      .status(200)
-      .json({ message: "All Products Retrieved", products });
+      .populate("sellerId")
+      .sort({ count: -1 }); // ✅ Puts products with count:0 at the bottom
+
+    return res.status(200).json({
+      message: "All Products Retrieved",
+      products,
+    });
   } catch (error) {
     console.error("Error fetching products:", error);
     return res

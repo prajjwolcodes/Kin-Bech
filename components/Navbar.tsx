@@ -1,12 +1,6 @@
 "use client";
 
-import { RootState } from "@/lib/store";
-import Image from "next/image";
-import logo from "@/public/logo.png";
-import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import Link from "next/link";
-import { Button } from "./ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,24 +9,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Bell,
-  Heart,
-  LogOut,
-  Menu,
-  Search,
-  Settings,
-  ShoppingCart,
-  User,
-  X,
-} from "lucide-react";
+import { RootState } from "@/lib/store";
+import logo from "@/public/logo.png";
+import { LogOut, Menu, Search, ShoppingCart, X } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Badge } from "@/components/ui/badge";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { usePathname, useRouter } from "next/navigation";
 import { logout } from "@/lib/features/auth/authSlice";
 import { setSearchQuery } from "@/lib/features/products/productSlice";
+import { usePathname, useRouter } from "next/navigation";
 
 const Navbar = () => {
   const { user, isAuthenticated } = useSelector(
@@ -89,7 +79,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center justify-center space-x-12 flex-1">
           {(pathname === "/" || !isAuthenticated) && (
             <>
-              <Link
+              {/* <Link
                 href="#features"
                 className="text-gray-700 hover:text-gray-900"
               >
@@ -106,7 +96,7 @@ const Navbar = () => {
                 className="text-gray-700 hover:text-gray-900"
               >
                 Pricing
-              </Link>
+              </Link> */}
             </>
           )}
 
@@ -214,10 +204,6 @@ const Navbar = () => {
                   )}
                 </Button>
               </Link>
-
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4" />
-              </Button>
             </>
           )}
 
@@ -249,10 +235,7 @@ const Navbar = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </DropdownMenuItem>
+
                 {user?.role === "buyer" && (
                   <DropdownMenuItem>
                     <Link
@@ -264,14 +247,7 @@ const Navbar = () => {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem>
-                  <Heart className="mr-2 h-4 w-4" />
-                  Wishlist
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -319,7 +295,6 @@ const Navbar = () => {
                 )}
                 <Link href="/buyer/cart">Cart</Link>
                 <Link href="/buyer/orders">My Orders</Link>
-                <Link href="#">Wishlist</Link>
               </>
             )}
 

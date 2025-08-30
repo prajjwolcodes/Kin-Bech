@@ -274,9 +274,9 @@ function BuyerDashboardContent() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1 }}
               >
-                <Link href={`/buyer/products/${product._id}`}>
-                  <Card className="hover:shadow-lg transition-shadow">
-                    <div className={`${viewMode === "list" ? "flex" : ""}`}>
+                <Card className="hover:shadow-lg transition-shadow">
+                  <div className={`${viewMode === "list" ? "flex" : ""}`}>
+                    <Link href={`/buyer/products/${product._id}`}>
                       <div
                         className={`${
                           viewMode === "list" ? "w-48 flex-shrink-0" : ""
@@ -296,56 +296,56 @@ function BuyerDashboardContent() {
                           }`}
                         />
                       </div>
-                      <div className="flex-1">
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <CardTitle className="text-lg">
-                                {product.name}
-                              </CardTitle>
-                              <CardDescription className="mt-1">
-                                by {product.sellerId.username}
-                              </CardDescription>
-                            </div>
-                            <Button variant="ghost" size="sm">
-                              <Heart className="h-4 w-4" />
-                            </Button>
+                    </Link>
+                    <div className="flex-1">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-lg">
+                              {product.name}
+                            </CardTitle>
+                            <CardDescription className="mt-1">
+                              by {product.sellerId.username}
+                            </CardDescription>
                           </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-gray-600 mb-4">
-                            {product.description}
-                          </p>
-                          {product.categoryId?.name && (
-                            <Badge className="mb-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                              {product.categoryId.name}
-                            </Badge>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="text-2xl font-bold text-blue-600">
-                                Rs. {product.price}
-                              </span>
-                              <p className="text-sm text-gray-500">
-                                {product.count} in stock
-                              </p>
-                            </div>
-                            <Button
-                              onClick={() => handleAddToCart(product)}
-                              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                              disabled={product.count === 0}
-                            >
-                              <ShoppingCart className="mr-2 h-4 w-4" />
-                              {product.count === 0
-                                ? "Out of Stock"
-                                : "Add to Cart"}
-                            </Button>
+                          <Button variant="ghost" size="sm">
+                            <Heart className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-gray-600 mb-4">
+                          {product.description}
+                        </p>
+                        {product.categoryId?.name && (
+                          <Badge className="mb-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                            {product.categoryId.name}
+                          </Badge>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-2xl font-bold text-blue-600">
+                              Rs. {product.price}
+                            </span>
+                            <p className="text-sm text-gray-500">
+                              {product.count} in stock
+                            </p>
                           </div>
-                        </CardContent>
-                      </div>
+                          <Button
+                            onClick={() => handleAddToCart(product)}
+                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                            disabled={product.count === 0}
+                          >
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            {product.count === 0
+                              ? "Out of Stock"
+                              : "Add to Cart"}
+                          </Button>
+                        </div>
+                      </CardContent>
                     </div>
-                  </Card>
-                </Link>
+                  </div>
+                </Card>
               </motion.div>
             ))}
           </motion.div>

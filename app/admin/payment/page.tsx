@@ -2,57 +2,52 @@
 
 import React, { useEffect, useState } from "react";
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
   TableHeader,
   TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { useSelector } from "react-redux";
+import { RootState } from "@/lib/store";
+import { MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { MoreVertical } from "lucide-react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/lib/store";
 
 interface Seller {
   _id: string;
-  username: string;
-  email: string;
-  totalOrders: number;
-  completedOrders: number;
+  seller: {
+    username: string;
+    email: string;
+  };
   payableAmount: number;
-  totalRevenue: number;
-  commission: number;
+  totalOrders: number;
 }
 
-const AdminSellerStatsPage = () => {
+const SellerPayoutsPage = () => {
   const [sellers, setSellers] = useState<Seller[]>([]);
-  const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
-  const { user, token } = useSelector((state: RootState) => state.auth);
+  const { token } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     async function fetchSellers() {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/users/seller`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/checkout/unpaid`,
           {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
         const data = await res.json();
@@ -64,161 +59,110 @@ const AdminSellerStatsPage = () => {
     fetchSellers();
   }, [token]);
 
-  const totalRevenue = sellers.reduce((sum, s) => sum + s.totalRevenue, 0);
-  const totalCommission = sellers.reduce((sum, s) => sum + s.commission, 0);
-  const totalPayable = sellers.reduce((sum, s) => sum + s.payableAmount, 0);
-
   async function paySeller(sellerId: string) {
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/checkout/paytoseller/${sellerId}`,
         {
           method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      if (!res.ok) {
-        throw new Error("Failed to pay seller");
-      }
-
+      if (!res.ok) throw new Error("Payment failed");
       const data = await res.json();
-      console.log("Payment successful:", data);
 
-      // Update the seller's payableAmount in state
-      setSellers((prevSellers) =>
-        prevSellers.map((seller) =>
-          seller._id === sellerId ? { ...seller, payableAmount: 0 } : seller
-        )
-      );
+      // Update UI
+      setSellers((prev) => prev.filter((s) => s._id !== sellerId));
+      console.log("Paid:", data);
     } catch (err) {
-      console.error("Failed to pay seller", err);
+      console.error(err);
     }
   }
 
+  const totalPayable = sellers?.reduce((sum, s) => sum + s.payableAmount, 0);
+
   return (
-    <div className="p-6 space-y-6">
-      <h2 className="text-2xl font-semibold">Seller Statistics</h2>
+    <div className="min-h-[calc(100vh-5rem)] bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Seller Payouts</h1>
+          </div>
+        </div>
 
-      {/* Summary Tabs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-900 shadow-md rounded-xl p-4 border">
-          <p className="text-sm text-muted-foreground">Total Revenue</p>
-          <p className="text-xl font-bold">Rs. {totalRevenue.toFixed(2)}</p>
+        {/* Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-sm text-gray-800">Total Sellers</p>
+              <p className="text-2xl font-bold">{sellers?.length}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-sm text-gray-800">Total Payable</p>
+              <p className="text-2xl font-bold text-green-600">
+                Rs. {totalPayable?.toFixed(2)}
+              </p>
+            </CardContent>
+          </Card>
         </div>
-        <div className="bg-white dark:bg-gray-900 shadow-md rounded-xl p-4 border">
-          <p className="text-sm text-muted-foreground">
-            Total Commission Earned
-          </p>
-          <p className="text-xl font-bold">Rs. {totalCommission.toFixed(2)}</p>
-        </div>
-        <div className="bg-white dark:bg-gray-900 shadow-md rounded-xl p-4 border">
-          <p className="text-sm text-muted-foreground">Total Payable Amount</p>
-          <p className="text-xl font-bold">Rs. {totalPayable.toFixed(2)}</p>
-        </div>
+
+        {/* Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Unpaid Sellers</CardTitle>
+            <CardDescription>
+              Sellers with unpaid completed orders
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Username</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Total Orders</TableHead>
+                  <TableHead>Payable Amount</TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sellers.map((s) => (
+                  <TableRow key={s._id}>
+                    <TableCell>{s.seller.username}</TableCell>
+                    <TableCell>{s.seller.email}</TableCell>
+                    <TableCell>{s.totalOrders}</TableCell>
+                    <TableCell>Rs. {s.payableAmount?.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => paySeller(s._id)}>
+                            Pay Now
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {sellers?.length === 0 && (
+              <p className="text-center text-gray-800 py-6">
+                No unpaid sellers found
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Seller Table */}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Username</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Total Orders</TableHead>
-            <TableHead>Completed Orders</TableHead>
-            <TableHead>Revenue</TableHead>
-            <TableHead>Commission</TableHead>
-            <TableHead>Payable Amount</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sellers.map((seller) => (
-            <TableRow key={seller._id}>
-              <TableCell>{seller.username}</TableCell>
-              <TableCell>{seller.email}</TableCell>
-              <TableCell>{seller.totalOrders}</TableCell>
-              <TableCell>{seller.completedOrders}</TableCell>
-              <TableCell>
-                Rs.{" "}
-                {seller.completedOrders
-                  ? seller.totalRevenue.toFixed(2)
-                  : "0.00"}
-              </TableCell>
-              <TableCell>Rs. {seller.commission.toFixed(2)}</TableCell>
-              <TableCell>Rs. {seller.payableAmount.toFixed(2)}</TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <Dialog
-                      open={!!selectedSeller}
-                      onOpenChange={() => setSelectedSeller(null)}
-                    >
-                      <DialogTrigger asChild>
-                        <DropdownMenuItem
-                          onSelect={() => setSelectedSeller(seller)}
-                        >
-                          View Details
-                        </DropdownMenuItem>
-                      </DialogTrigger>
-                      {seller.payableAmount > 0 && (
-                        <DropdownMenuItem onClick={() => paySeller(seller._id)}>
-                          Pay Now
-                        </DropdownMenuItem>
-                      )}
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Seller Details</DialogTitle>
-                        </DialogHeader>
-                        {selectedSeller && (
-                          <div className="space-y-2">
-                            <p>
-                              <strong>Username:</strong>{" "}
-                              {selectedSeller.username}
-                            </p>
-                            <p>
-                              <strong>Email:</strong> {selectedSeller.email}
-                            </p>
-                            <p>
-                              <strong>Total Orders:</strong>{" "}
-                              {selectedSeller.totalOrders}
-                            </p>
-                            <p>
-                              <strong>Completed Orders:</strong>{" "}
-                              {selectedSeller.completedOrders}
-                            </p>
-                            <p>
-                              <strong>Revenue:</strong> Rs.{" "}
-                              {selectedSeller.totalRevenue.toFixed(2)}
-                            </p>
-                            <p>
-                              <strong>Commission:</strong> Rs.{" "}
-                              {selectedSeller.commission.toFixed(2)}
-                            </p>
-                            <p>
-                              <strong>Payable Amount:</strong> Rs.{" "}
-                              {selectedSeller.payableAmount.toFixed(2)}
-                            </p>
-                          </div>
-                        )}
-                      </DialogContent>
-                    </Dialog>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
     </div>
   );
 };
 
-export default AdminSellerStatsPage;
+export default SellerPayoutsPage;
