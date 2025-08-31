@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.className} min-h-screen bg-gradient-to-br from-white-50 via-white to-purple-50`}
+        className={`${inter.className} min-h-screen `}
         suppressHydrationWarning
       >
         <Providers>
